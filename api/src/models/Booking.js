@@ -9,6 +9,12 @@ const cartItemSchema = new mongoose.Schema(
     date: String,
     time: String,
     location: String,
+    ticketIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Ticket",
+      },
+    ],
   },
   { _id: false }
 );
@@ -17,7 +23,6 @@ const bookingSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     phone: { type: String, required: true },
-    cartItems: [cartItemSchema],
     amount: { type: Number, required: true },
     paymentMode: { type: String, enum: ["MOCK", "RAZORPAY"], default: "MOCK" },
     status: {

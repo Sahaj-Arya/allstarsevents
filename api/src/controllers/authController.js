@@ -80,11 +80,17 @@ export async function updateProfile(req, res) {
 }
 
 export async function getUserByPhone(req, res) {
-  const { phone } = req.query;
-  if (!phone) return res.status(400).json({ error: "phone required" });
-  const user = await User.findOne({ phone });
-  if (!user) return res.json({ user: null });
-  return res.json({ user });
+  try {
+    const { phone } = req.query;
+    if (!phone) return res.status(400).json({ error: "phone required" });
+    const user = await User.findOne({ phone });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    return res.json({ user });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ error: err.message || "Internal server error" });
+  }
 }
 
 async function upsertUser(phone, { name, email }) {

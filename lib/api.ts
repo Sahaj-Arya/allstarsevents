@@ -9,8 +9,7 @@ import {
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
-const PAYMENT_MODE =
-  (process.env.NEXT_PUBLIC_PAYMENT_MODE as PaymentMode) || "MOCK";
+const PAYMENT_MODE = "RAZORPAY";
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
 
 type ApiBooking = {
@@ -53,7 +52,7 @@ export async function fetchEvents(): Promise<EventItem[]> {
 }
 
 function mapCartItemsForApi(cartItems: CartItem[]) {
-  return cartItems.map(({ event, quantity }) => ({
+  return cartItems.map(({ event, quantity, ticketIds }) => ({
     eventId: event.id,
     title: event.title,
     price: event.price,
@@ -62,6 +61,7 @@ function mapCartItemsForApi(cartItems: CartItem[]) {
     time: event.time,
     location: event.location,
     type: event.type,
+    ticketIds,
   }));
 }
 
@@ -79,6 +79,7 @@ function mapBookingFromApi(api: ApiBooking): Booking {
       type: (item.type as EventItem["type"]) || "event",
     },
     quantity: item.quantity || 1,
+    ticketIds: (item as any).ticketIds || [],
   }));
 
   return {
@@ -203,11 +204,21 @@ export async function validateTicket(ticketToken: string) {
 }
 
 export async function fetchUserByPhone(phone: string) {
-  if (!phone) return null;
-  const res = await fetch(
-    `${API_BASE_URL}/auth/user-by-phone?phone=${encodeURIComponent(phone)}`
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.user || null;
+  if (!phone) return { user: null, error: "phone required", status: 400 };
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/auth/user-by-phone?phone=${encodeURIComponent(phone)}`
+    );
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        user: null,
+        error: data.error || "Unknown error",
+        status: res.status,
+      };
+    }
+    return { user: data.user || null, error: null, status: res.status };
+  } catch (err: any) {
+    return { user: null, error: err.message || "Network error", status: 500 };
+  }
 }

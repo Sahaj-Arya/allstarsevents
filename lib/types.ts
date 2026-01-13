@@ -1,6 +1,7 @@
 export type EventType = "event" | "class";
 
 export type EventItem = {
+  _id: Key | null | undefined;
   id: string;
   title: string;
   description: string;
@@ -15,6 +16,7 @@ export type EventItem = {
 export type CartItem = {
   event: EventItem;
   quantity: number;
+  ticketIds?: string[]; // array of Ticket _id for this cart item
 };
 
 export type PaymentMode = "RAZORPAY" | "MOCK";

@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const ticketSchema = new mongoose.Schema({
   event: {
@@ -16,6 +16,12 @@ const ticketSchema = new mongoose.Schema({
     ref: "Booking",
     required: true,
   },
+  eventId: String,
+  title: String,
+  price: Number,
+  date: String,
+  time: String,
+  location: String,
   seat: {
     type: String,
   },
@@ -29,4 +35,5 @@ const ticketSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Ticket", ticketSchema);
+const Ticket = mongoose.model("Ticket", ticketSchema);
+export default Ticket;

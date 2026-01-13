@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { Booking } from "../models/Booking.js";
 import { User } from "../models/User.js";
+import Ticket from "../models/Ticket.js";
 
 export function createPaymentController(razorpay) {
   return {
@@ -24,18 +25,7 @@ export function createPaymentController(razorpay) {
 
       const ticketToken = crypto.randomUUID();
 
-      if (paymentMode === "MOCK") {
-        const booking = await Booking.create({
-          user: user._id,
-          phone,
-          cartItems: cartItems || [],
-          amount,
-          paymentMode: "MOCK",
-          status: "paid",
-          ticketToken,
-        });
-        return res.json({ ok: true, booking });
-      }
+      // Always use Razorpay, do not allow MOCK mode
 
       try {
         const order = await razorpay.orders.create({
@@ -44,16 +34,51 @@ export function createPaymentController(razorpay) {
           receipt: `rcpt_${Date.now()}`,
         });
 
+        // For each cart item, create as many tickets as quantity, collect ticketIds
+        const { Event } = await import("../models/Event.js");
+        // Step 1: Prepare ticket creation data (no booking ref yet)
+        const ticketDocsToCreate = [];
+        let ticketCount = 0;
+        for (const item of cartItems || []) {
+          const eventDoc = await Event.findOne({ id: item.eventId });
+          if (!eventDoc) continue;
+          for (let i = 0; i < (item.quantity || 1); i++) {
+            ticketDocsToCreate.push({
+              event: eventDoc._id,
+              user: user._id,
+              isScanned: false,
+              eventId: item.eventId,
+              title: item.title,
+              price: item.price,
+              date: item.date,
+              time: item.time,
+              location: item.location,
+            });
+            ticketCount++;
+          }
+        }
+
+        if (ticketCount === 0) {
+          return res
+            .status(400)
+            .json({ error: "No valid cart items to create booking." });
+        }
+
+        // Step 2: Create booking (no cartItems)
         const booking = await Booking.create({
           user: user._id,
           phone,
-          cartItems: cartItems || [],
           amount,
           paymentMode: "RAZORPAY",
           status: "pending",
           ticketToken,
           razorpayOrderId: order.id,
         });
+
+        // Step 3: Create tickets with booking ref
+        for (const ticketData of ticketDocsToCreate) {
+          await Ticket.create({ ...ticketData, booking: booking._id });
+        }
 
         return res.json({ ok: true, order, booking });
       } catch (err) {

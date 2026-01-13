@@ -19,7 +19,7 @@ import { useAuth } from "../../lib/auth-context";
 
 export default function ProfilePage() {
   const { bookings, replaceBookings } = useCart();
-  const { profile, setProfile, clearProfile } = useAuth();
+  const { profile, setProfile } = useAuth();
 
   const [name, setName] = useState(profile?.name || "");
   const [email, setEmail] = useState(profile?.email || "");
@@ -44,7 +44,6 @@ export default function ProfilePage() {
     if (profile?.phone || profile?.token) {
       void syncTickets(profile.token, profile.phone);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.phone]);
 
   const handleSendOtp = async () => {
@@ -156,26 +155,28 @@ export default function ProfilePage() {
   // Fetch user details by phone when phone changes and user is authenticated
   useEffect(() => {
     if (isAuthed && phone.length >= 10) {
-      fetchUserByPhone(phone).then((user) => {
+      fetchUserByPhone(phone).then(({ user, error, status }) => {
         if (user) {
           setName(user.name || "");
           setEmail(user.email || "");
         } else {
           setName("");
           setEmail("");
+          if (error) setError(error + (status ? ` (code ${status})` : ""));
         }
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone, isAuthed]);
 
   // Fetch latest user details from backend when authenticated
   useEffect(() => {
     if (isAuthed && profile?.phone) {
-      fetchUserByPhone(profile.phone).then((user) => {
+      fetchUserByPhone(profile.phone).then(({ user, error, status }) => {
         if (user) {
           setName(user.name || "");
           setEmail(user.email || "");
+        } else if (error) {
+          setError(error + (status ? ` (code ${status})` : ""));
         }
       });
     }

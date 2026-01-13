@@ -52,6 +52,7 @@ export default function CheckoutPage() {
     setError(null);
     try {
       const booking = await startCheckout(items, p);
+      // booking.cartItems now have ticketIds for each cart item
       recordBooking(booking);
       router.push(`/ticket/${booking.ticketToken}`);
     } catch (err) {
@@ -218,9 +219,9 @@ export default function CheckoutPage() {
           {items.length === 0 && (
             <p className="text-sm text-neutral-600">No items in cart.</p>
           )}
-          {items.map((item) => (
+          {items?.map((item) => (
             <div
-              key={item.event.id}
+              key={item?.event?._id}
               className="flex items-center justify-between text-sm text-neutral-700"
             >
               <div>

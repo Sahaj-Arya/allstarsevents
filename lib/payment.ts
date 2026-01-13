@@ -35,7 +35,7 @@ export async function startCheckout(
   cartItems: CartItem[],
   profile: UserProfile
 ): Promise<Booking> {
-  const paymentMode = getPaymentMode();
+  const paymentMode = "RAZORPAY";
   const amount = cartItems.reduce(
     (sum, item) => sum + item.event.price * item.quantity,
     0
@@ -48,11 +48,7 @@ export async function startCheckout(
     paymentMode
   );
 
-  if (paymentMode === "MOCK") {
-    if (!order.booking)
-      throw new Error("Booking missing in mock payment response");
-    return order.booking;
-  }
+  // Always use Razorpay, do not allow MOCK mode
 
   if (!order.orderId) {
     throw new Error("Missing order id for Razorpay payment");
