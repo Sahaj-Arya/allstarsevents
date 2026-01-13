@@ -27,10 +27,13 @@ export type Booking = {
   status: "pending" | "paid" | "failed" | "checked-in";
   ticketToken: string;
   createdAt: string;
+  phone?: string;
 };
 
 export type UserProfile = {
   name: string;
   email: string;
   phone: string;
+  token?: string;
+  userId?: string;
 };

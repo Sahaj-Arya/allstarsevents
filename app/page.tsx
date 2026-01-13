@@ -32,7 +32,7 @@ export default async function Home() {
         </div>
 
         <div className="grid gap-4">
-          {events.map((event) => (
+          {events?.map((event) => (
             <EventCard key={event.id} event={event} />
           ))}
         </div>

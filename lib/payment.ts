@@ -41,15 +41,21 @@ export async function startCheckout(
     0
   );
 
-  const order = await createPaymentOrder(amount, profile);
+  const order = await createPaymentOrder(
+    amount,
+    profile,
+    cartItems,
+    paymentMode
+  );
 
   if (paymentMode === "MOCK") {
-    return verifyPayment({
-      orderId: order.orderId,
-      cartItems,
-      amount,
-      profile,
-    });
+    if (!order.booking)
+      throw new Error("Booking missing in mock payment response");
+    return order.booking;
+  }
+
+  if (!order.orderId) {
+    throw new Error("Missing order id for Razorpay payment");
   }
 
   const ok = await loadRazorpayScript();
@@ -74,12 +80,10 @@ export async function startCheckout(
       handler: async (response: RazorpayResponse) => {
         try {
           const booking = await verifyPayment({
-            orderId: order.orderId,
-            paymentId: response.razorpay_payment_id,
-            signature: response.razorpay_signature,
-            cartItems,
-            amount,
-            profile,
+            razorpayOrderId: order.orderId,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+            token: profile.token,
           });
           resolve(booking);
         } catch (err) {

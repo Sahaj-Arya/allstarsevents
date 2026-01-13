@@ -1,22 +1,23 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "../../lib/cart-context";
-import { getPaymentMode } from "../../lib/api";
+import { fetchTickets, getPaymentMode } from "../../lib/api";
 import { startCheckout } from "../../lib/payment";
-import { useLocalStorage } from "../../lib/useLocalStorage";
 import { UserProfile } from "../../lib/types";
-import { sendOtp, verifyOtp } from "../../lib/otp";
+import { Button } from "../../components/ui/Button";
+import { InputField } from "../../components/ui/InputField";
+import { Alert } from "../../components/ui/Alert";
+import { BYPASS_OTP, STATIC_OTP, sendOtp, verifyOtp } from "../../lib/otp";
+import { useAuth } from "../../lib/auth-context";
 
 export default function CheckoutPage() {
-  const { items, total, recordBooking, updateQuantity } = useCart();
+  const { items, total, recordBooking, updateQuantity, replaceBookings } =
+    useCart();
   const router = useRouter();
-  const [profile, setProfile] = useLocalStorage<UserProfile | null>(
-    "profile",
-    null
-  );
+  const { profile, setProfile } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [modalName, setModalName] = useState(profile?.name || "");
   const [modalEmail, setModalEmail] = useState(profile?.email || "");
@@ -30,7 +31,23 @@ export default function CheckoutPage() {
 
   const paymentMode = getPaymentMode();
 
+  const syncTickets = async (token?: string, phone?: string) => {
+    const tickets = await fetchTickets(token, phone);
+    replaceBookings(tickets);
+  };
+
+  useEffect(() => {
+    if (profile?.phone || profile?.token)
+      void syncTickets(profile.token, profile.phone);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.phone]);
+
   const proceedPayment = async (p: UserProfile) => {
+    if (!p.token) {
+      setError("Please login again to continue");
+      setShowAuthModal(true);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -50,7 +67,7 @@ export default function CheckoutPage() {
       setError("Add at least one event");
       return;
     }
-    if (profile) {
+    if (profile && profile.token) {
       void proceedPayment(profile);
     } else {
       setShowAuthModal(true);
@@ -59,14 +76,20 @@ export default function CheckoutPage() {
 
   const handleAuthSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!otpRequestId) {
+    const requestIdToUse = otpRequestId || "bypass";
+    if (!otpRequestId && !BYPASS_OTP) {
       setError("Send OTP first");
       return;
     }
     setOtpLoading(true);
-    const verified = await verifyOtp(modalPhone, otp, otpRequestId);
+    const verified = await verifyOtp(
+      modalPhone,
+      otp || STATIC_OTP,
+      requestIdToUse,
+      { name: modalName, email: modalEmail }
+    );
     setOtpLoading(false);
-    if (!verified) {
+    if (!verified.ok) {
       setError("OTP verification failed");
       return;
     }
@@ -74,8 +97,11 @@ export default function CheckoutPage() {
       name: modalName || "Guest",
       email: modalEmail || "",
       phone: modalPhone,
+      token: verified.token,
+      userId: verified.user?._id,
     };
     setProfile(newProfile);
+    await syncTickets(verified.token, modalPhone);
     setShowAuthModal(false);
     await proceedPayment(newProfile);
   };
@@ -232,115 +258,107 @@ export default function CheckoutPage() {
               details and verify via OTP.
             </p>
             <form onSubmit={handleAuthSubmit} className="mt-4 space-y-3">
-              <label className="block space-y-1">
-                <span className="text-sm font-semibold text-neutral-800">
-                  Name
-                </span>
-                <input
-                  className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-                  value={modalName}
-                  onChange={(e) => setModalName(e.target.value)}
-                  required
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-semibold text-neutral-800">
-                  Email
-                </span>
-                <input
-                  className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-                  value={modalEmail}
-                  onChange={(e) => setModalEmail(e.target.value)}
-                  type="email"
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-semibold text-neutral-800">
-                  Phone
-                </span>
-                <input
-                  className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-                  value={modalPhone}
-                  onChange={(e) => setModalPhone(e.target.value)}
-                  required
-                />
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    className="flex-1 rounded-full border border-black/10 px-3 py-2 text-sm font-semibold text-neutral-800"
-                    onClick={async () => {
-                      setOtpStatus(null);
-                      setOtpLoading(true);
-                      const reqId = await sendOtp(modalPhone);
-                      setOtpLoading(false);
-                      if (reqId) {
-                        setOtpRequestId(reqId);
-                        setOtpStatus("OTP sent");
-                      } else {
-                        setOtpStatus("Failed to send OTP");
-                      }
-                    }}
-                    disabled={otpLoading || !modalPhone}
-                  >
-                    {otpLoading ? "Sending..." : "Send OTP"}
-                  </button>
-                  <button
-                    type="button"
-                    className="flex-1 rounded-full border border-black/10 px-3 py-2 text-sm font-semibold text-neutral-800"
-                    onClick={async () => {
-                      if (!otpRequestId) return;
-                      setOtpLoading(true);
-                      const reqId = await sendOtp(modalPhone);
-                      setOtpLoading(false);
-                      if (reqId) {
-                        setOtpRequestId(reqId);
-                        setOtpStatus("OTP resent");
-                      } else {
-                        setOtpStatus("Failed to resend");
-                      }
-                    }}
-                    disabled={otpLoading || !modalPhone}
-                  >
-                    {otpLoading ? "..." : "Resend"}
-                  </button>
-                </div>
-                {otpStatus && (
-                  <p className="text-xs text-neutral-500">{otpStatus}</p>
-                )}
-              </label>
+              <InputField
+                label="Name"
+                required
+                requiredMark
+                value={modalName}
+                onChange={(e) => setModalName(e.target.value)}
+              />
+              <InputField
+                label="Email"
+                type="email"
+                value={modalEmail}
+                onChange={(e) => setModalEmail(e.target.value)}
+                placeholder="you@example.com"
+              />
+              <InputField
+                label="Phone"
+                required
+                requiredMark
+                value={modalPhone}
+                onChange={(e) => setModalPhone(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  onClick={async () => {
+                    setOtpStatus(null);
+                    setOtpLoading(true);
+                    const reqId = await sendOtp(modalPhone);
+                    setOtpLoading(false);
+                    if (reqId) {
+                      setOtpRequestId(reqId);
+                      if (BYPASS_OTP) setOtp(STATIC_OTP);
+                      setOtpStatus(
+                        BYPASS_OTP
+                          ? `OTP bypassed (using ${STATIC_OTP})`
+                          : `OTP sent (use ${STATIC_OTP})`
+                      );
+                    } else {
+                      setOtpStatus("Failed to send OTP");
+                    }
+                  }}
+                  disabled={otpLoading || !modalPhone}
+                >
+                  {otpLoading ? "Sending..." : "Send OTP"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  onClick={async () => {
+                    if (!otpRequestId) return;
+                    setOtpLoading(true);
+                    const reqId = await sendOtp(modalPhone);
+                    setOtpLoading(false);
+                    if (reqId) {
+                      setOtpRequestId(reqId);
+                      if (BYPASS_OTP) setOtp(STATIC_OTP);
+                      setOtpStatus(
+                        BYPASS_OTP
+                          ? `OTP bypassed (using ${STATIC_OTP})`
+                          : `OTP resent (use ${STATIC_OTP})`
+                      );
+                    } else {
+                      setOtpStatus("Failed to resend");
+                    }
+                  }}
+                  disabled={otpLoading || !modalPhone}
+                >
+                  {otpLoading ? "..." : "Resend"}
+                </Button>
+              </div>
+              {otpStatus && <Alert tone="info">{otpStatus}</Alert>}
 
-              <label className="block space-y-1">
-                <span className="text-sm font-semibold text-neutral-800">
-                  OTP
-                </span>
-                <input
-                  className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="123456"
-                  required
-                />
-                <p className="text-xs text-neutral-500">
-                  Mock OTP flow; integrates with backend /auth/send-otp and
-                  /auth/verify-otp.
-                </p>
-              </label>
+              <InputField
+                label="OTP"
+                required
+                requiredMark
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                placeholder={STATIC_OTP || "123456"}
+                hint="Mock OTP flow; integrates with backend /auth/send-otp and /auth/verify-otp."
+              />
 
               <div className="flex gap-3 pt-2">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  fullWidth
                   onClick={() => setShowAuthModal(false)}
-                  className="flex-1 rounded-full border border-black/10 px-4 py-2 text-sm font-semibold text-neutral-800"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="flex-1 rounded-full bg-black px-4 py-2 text-sm font-semibold text-white"
+                  fullWidth
                   disabled={loading || otpLoading}
                 >
                   {loading ? "Processing..." : "Verify & Pay"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

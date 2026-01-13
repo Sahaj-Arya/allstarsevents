@@ -1,83 +1,75 @@
 "use client";
 
-import React, { createContext, useContext, useMemo } from "react";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { CartItem, Booking, EventItem } from "./types";
-import { useLocalStorage } from "./useLocalStorage";
 
-const CartContext = createContext<{
+type CartState = {
   items: CartItem[];
   bookings: Booking[];
+  total: number;
   addItem: (event: EventItem, quantity?: number) => void;
   updateQuantity: (eventId: string, quantity: number) => void;
   removeItem: (eventId: string) => void;
   clearCart: () => void;
   recordBooking: (booking: Booking) => void;
-  total: number;
-} | null>(null);
+  replaceBookings: (bookings: Booking[]) => void;
+};
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useLocalStorage<CartItem[]>("cart", []);
-  const [bookings, setBookings] = useLocalStorage<Booking[]>("bookings", []);
+const calculateTotal = (items: CartItem[]) =>
+  items.reduce((sum, item) => sum + item.event.price * item.quantity, 0);
 
-  const addItem = (event: EventItem, quantity = 1) => {
-    // Only one event can be in the cart; replace if different.
-    setItems((prev) => {
-      const existing = prev[0];
-      if (existing && existing.event.id === event.id) {
-        return [{ ...existing, quantity: existing.quantity + quantity }];
-      }
-      return [{ event, quantity }];
-    });
-  };
+export const useCartStore = create<CartState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      bookings: [],
+      total: 0,
+      addItem: (event, quantity = 1) => {
+        set((state) => {
+          const existing = state.items[0];
+          const nextItems =
+            existing && existing.event.id === event.id
+              ? [{ ...existing, quantity: existing.quantity + quantity }]
+              : [{ event, quantity }];
+          return { items: nextItems, total: calculateTotal(nextItems) };
+        });
+      },
+      updateQuantity: (eventId, quantity) => {
+        set((state) => {
+          const nextItems = state.items
+            .map((item) =>
+              item.event.id === eventId ? { ...item, quantity } : item
+            )
+            .filter((item) => item.quantity > 0)
+            .slice(0, 1);
+          return { items: nextItems, total: calculateTotal(nextItems) };
+        });
+      },
+      removeItem: (eventId) => {
+        set((state) => {
+          const nextItems = state.items.filter(
+            (item) => item.event.id !== eventId
+          );
+          return { items: nextItems, total: calculateTotal(nextItems) };
+        });
+      },
+      clearCart: () => set({ items: [], total: 0 }),
+      recordBooking: (booking) => {
+        const currentBookings = get().bookings;
+        set({
+          bookings: [booking, ...currentBookings],
+          items: [],
+          total: 0,
+        });
+      },
+      replaceBookings: (bookings) =>
+        set((state) => ({ ...state, bookings: bookings || [] })),
+    }),
+    {
+      name: "cart-store",
+    }
+  )
+);
 
-  const updateQuantity = (eventId: string, quantity: number) => {
-    setItems((prev) =>
-      prev
-        .map((item) =>
-          item.event.id === eventId ? { ...item, quantity } : item
-        )
-        .filter((item) => item.quantity > 0)
-        .slice(0, 1)
-    );
-  };
-
-  const removeItem = (eventId: string) => {
-    setItems((prev) => prev.filter((item) => item.event.id !== eventId));
-  };
-
-  const clearCart = () => setItems([]);
-
-  const recordBooking = (booking: Booking) => {
-    setBookings((prev) => [booking, ...prev]);
-    clearCart();
-  };
-
-  const total = useMemo(
-    () =>
-      items.reduce((sum, item) => sum + item.event.price * item.quantity, 0),
-    [items]
-  );
-
-  return (
-    <CartContext.Provider
-      value={{
-        items,
-        bookings,
-        addItem,
-        updateQuantity,
-        removeItem,
-        clearCart,
-        recordBooking,
-        total,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
-}
-
-export function useCart() {
-  const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used within CartProvider");
-  return ctx;
-}
+export const useCart = () => useCartStore();
