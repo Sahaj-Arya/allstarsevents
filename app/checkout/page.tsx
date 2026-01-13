@@ -1,0 +1,351 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useCart } from "../../lib/cart-context";
+import { getPaymentMode } from "../../lib/api";
+import { startCheckout } from "../../lib/payment";
+import { useLocalStorage } from "../../lib/useLocalStorage";
+import { UserProfile } from "../../lib/types";
+import { sendOtp, verifyOtp } from "../../lib/otp";
+
+export default function CheckoutPage() {
+  const { items, total, recordBooking, updateQuantity } = useCart();
+  const router = useRouter();
+  const [profile, setProfile] = useLocalStorage<UserProfile | null>(
+    "profile",
+    null
+  );
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [modalName, setModalName] = useState(profile?.name || "");
+  const [modalEmail, setModalEmail] = useState(profile?.email || "");
+  const [modalPhone, setModalPhone] = useState(profile?.phone || "");
+  const [otp, setOtp] = useState("");
+  const [otpRequestId, setOtpRequestId] = useState<string | null>(null);
+  const [otpStatus, setOtpStatus] = useState<string | null>(null);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const paymentMode = getPaymentMode();
+
+  const proceedPayment = async (p: UserProfile) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const booking = await startCheckout(items, p);
+      recordBooking(booking);
+      router.push(`/ticket/${booking.ticketToken}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Payment failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePayClick = (e: FormEvent) => {
+    e.preventDefault();
+    if (items.length === 0) {
+      setError("Add at least one event");
+      return;
+    }
+    if (profile) {
+      void proceedPayment(profile);
+    } else {
+      setShowAuthModal(true);
+    }
+  };
+
+  const handleAuthSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!otpRequestId) {
+      setError("Send OTP first");
+      return;
+    }
+    setOtpLoading(true);
+    const verified = await verifyOtp(modalPhone, otp, otpRequestId);
+    setOtpLoading(false);
+    if (!verified) {
+      setError("OTP verification failed");
+      return;
+    }
+    const newProfile: UserProfile = {
+      name: modalName || "Guest",
+      email: modalEmail || "",
+      phone: modalPhone,
+    };
+    setProfile(newProfile);
+    setShowAuthModal(false);
+    await proceedPayment(newProfile);
+  };
+
+  return (
+    <div className="mx-auto max-w-4xl px-6 py-10">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-semibold text-neutral-900">Checkout</h1>
+        <Link
+          href="/cart"
+          className="text-sm font-semibold text-neutral-700 underline"
+        >
+          Back to selection
+        </Link>
+      </div>
+
+      <div className="mt-6 grid gap-6 md:grid-cols-[1.6fr_1fr]">
+        <form
+          onSubmit={handlePayClick}
+          className="space-y-4 rounded-2xl border border-black/5 bg-white p-6 shadow-sm"
+        >
+          <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
+            Tickets
+          </p>
+
+          {items.length === 0 && (
+            <p className="text-sm text-neutral-700">
+              No event selected. Go back and pick one event.
+            </p>
+          )}
+
+          {items.map((item) => (
+            <div key={item.event.id} className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-semibold text-neutral-900">
+                    {item.event.title}
+                  </p>
+                  <p className="text-sm text-neutral-600">
+                    {item.event.date} · {item.event.time}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    {item.event.location}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 rounded-full border border-black/10">
+                  <button
+                    type="button"
+                    className="px-3 py-1 text-lg text-neutral-700"
+                    onClick={() =>
+                      updateQuantity(
+                        item.event.id,
+                        Math.max(1, item.quantity - 1)
+                      )
+                    }
+                    aria-label="Decrease tickets"
+                  >
+                    −
+                  </button>
+                  <span className="px-3 text-neutral-900 font-semibold">
+                    {item.quantity}
+                  </span>
+                  <button
+                    type="button"
+                    className="px-3 py-1 text-lg text-neutral-700"
+                    onClick={() =>
+                      updateQuantity(item.event.id, item.quantity + 1)
+                    }
+                    aria-label="Increase tickets"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          <div className="rounded-xl bg-neutral-50 p-4 text-sm text-neutral-700">
+            <p className="font-semibold text-neutral-900">
+              Payment mode: {paymentMode}
+            </p>
+            {paymentMode === "MOCK" ? (
+              <p>
+                Instant success. Switch to RAZORPAY when the backend key +
+                webhook are ready.
+              </p>
+            ) : (
+              <p>
+                Razorpay flow will trigger a hosted payment window. Keep the key
+                and backend online.
+              </p>
+            )}
+          </div>
+
+          {error && (
+            <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? "Processing..." : `Pay ₹${total}`}
+          </button>
+        </form>
+
+        <div className="space-y-4 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold text-neutral-900">
+            Order summary
+          </p>
+          {items.length === 0 && (
+            <p className="text-sm text-neutral-600">No items in cart.</p>
+          )}
+          {items.map((item) => (
+            <div
+              key={item.event.id}
+              className="flex items-center justify-between text-sm text-neutral-700"
+            >
+              <div>
+                <p className="font-semibold text-neutral-900">
+                  {item.event.title}
+                </p>
+                <p className="text-neutral-500">
+                  {item.quantity} x ₹{item.event.price}
+                </p>
+              </div>
+              <p className="font-semibold text-neutral-900">
+                ₹{item.event.price * item.quantity}
+              </p>
+            </div>
+          ))}
+          <div className="flex items-center justify-between border-t border-dashed border-black/10 pt-4 text-sm font-semibold text-neutral-900">
+            <span>Total</span>
+            <span>₹{total}</span>
+          </div>
+          <p className="text-xs text-neutral-500">
+            Payments are mocked until Razorpay mode is enabled. Backend
+            endpoints are prepared: /payment/create-order and /payment/verify.
+          </p>
+        </div>
+      </div>
+
+      {showAuthModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-black/10 bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-semibold text-neutral-900">
+              Complete with OTP
+            </h2>
+            <p className="text-sm text-neutral-600">
+              If you&apos;re signed in, this would auto-skip. Otherwise enter
+              details and verify via OTP.
+            </p>
+            <form onSubmit={handleAuthSubmit} className="mt-4 space-y-3">
+              <label className="block space-y-1">
+                <span className="text-sm font-semibold text-neutral-800">
+                  Name
+                </span>
+                <input
+                  className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
+                  value={modalName}
+                  onChange={(e) => setModalName(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm font-semibold text-neutral-800">
+                  Email
+                </span>
+                <input
+                  className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
+                  value={modalEmail}
+                  onChange={(e) => setModalEmail(e.target.value)}
+                  type="email"
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm font-semibold text-neutral-800">
+                  Phone
+                </span>
+                <input
+                  className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
+                  value={modalPhone}
+                  onChange={(e) => setModalPhone(e.target.value)}
+                  required
+                />
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    className="flex-1 rounded-full border border-black/10 px-3 py-2 text-sm font-semibold text-neutral-800"
+                    onClick={async () => {
+                      setOtpStatus(null);
+                      setOtpLoading(true);
+                      const reqId = await sendOtp(modalPhone);
+                      setOtpLoading(false);
+                      if (reqId) {
+                        setOtpRequestId(reqId);
+                        setOtpStatus("OTP sent");
+                      } else {
+                        setOtpStatus("Failed to send OTP");
+                      }
+                    }}
+                    disabled={otpLoading || !modalPhone}
+                  >
+                    {otpLoading ? "Sending..." : "Send OTP"}
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 rounded-full border border-black/10 px-3 py-2 text-sm font-semibold text-neutral-800"
+                    onClick={async () => {
+                      if (!otpRequestId) return;
+                      setOtpLoading(true);
+                      const reqId = await sendOtp(modalPhone);
+                      setOtpLoading(false);
+                      if (reqId) {
+                        setOtpRequestId(reqId);
+                        setOtpStatus("OTP resent");
+                      } else {
+                        setOtpStatus("Failed to resend");
+                      }
+                    }}
+                    disabled={otpLoading || !modalPhone}
+                  >
+                    {otpLoading ? "..." : "Resend"}
+                  </button>
+                </div>
+                {otpStatus && (
+                  <p className="text-xs text-neutral-500">{otpStatus}</p>
+                )}
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm font-semibold text-neutral-800">
+                  OTP
+                </span>
+                <input
+                  className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="123456"
+                  required
+                />
+                <p className="text-xs text-neutral-500">
+                  Mock OTP flow; integrates with backend /auth/send-otp and
+                  /auth/verify-otp.
+                </p>
+              </label>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAuthModal(false)}
+                  className="flex-1 rounded-full border border-black/10 px-4 py-2 text-sm font-semibold text-neutral-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-full bg-black px-4 py-2 text-sm font-semibold text-white"
+                  disabled={loading || otpLoading}
+                >
+                  {loading ? "Processing..." : "Verify & Pay"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
