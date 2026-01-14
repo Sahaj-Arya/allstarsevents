@@ -28,11 +28,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-neutral-950 text-white`}
       >
         <Providers>
           <Header />
-          <main className="min-h-screen bg-neutral-50">{children}</main>
+          <main className="min-h-screen bg-gradient-to-b from-neutral-950 via-slate-950 to-black">
+            {children}
+          </main>
         </Providers>
       </body>
     </html>

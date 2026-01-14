@@ -24,7 +24,7 @@ export default async function Home() {
             </Link>
             <Link
               href="/checkout"
-              className="rounded-full bg-white text-black px-4 py-2 hover:bg-white/90"
+              className="rounded-full bg-rose-600 px-4 py-2 text-white hover:bg-rose-500"
             >
               Checkout
             </Link>

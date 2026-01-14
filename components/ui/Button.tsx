@@ -22,14 +22,14 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    "inline-flex items-center justify-center rounded-full font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
+    "inline-flex items-center justify-center rounded-full font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500";
   const variants: Record<Variant, string> = {
     primary:
-      "bg-black text-white hover:bg-neutral-800 disabled:bg-neutral-300 disabled:text-white",
+      "bg-rose-600 text-white hover:bg-rose-500 disabled:bg-white/10 disabled:text-white/40",
     secondary:
-      "border border-black/10 bg-white text-neutral-900 hover:border-black/30 disabled:opacity-60",
+      "border border-white/15 bg-white/5 text-white hover:bg-white/10 hover:border-white/25 disabled:opacity-60",
     ghost:
-      "text-neutral-800 hover:bg-neutral-100 disabled:text-neutral-400 disabled:bg-transparent",
+      "text-white/80 hover:bg-white/10 disabled:text-white/30 disabled:bg-transparent",
   };
   const sizes: Record<Size, string> = {
     md: "px-4 py-3 text-sm",

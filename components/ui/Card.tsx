@@ -7,7 +7,7 @@ export function Card({
   return (
     <div
       className={[
-        "rounded-2xl border border-black/5 bg-white p-6 shadow-sm",
+        "rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur",
         className,
       ]
         .filter(Boolean)

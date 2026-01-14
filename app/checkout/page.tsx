@@ -110,10 +110,10 @@ export default function CheckoutPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold text-neutral-900">Checkout</h1>
+        <h1 className="text-3xl font-semibold text-white">Checkout</h1>
         <Link
           href="/cart"
-          className="text-sm font-semibold text-neutral-700 underline"
+          className="text-sm font-semibold text-white/70 underline decoration-white/30 hover:text-white"
         >
           Back to selection
         </Link>
@@ -122,14 +122,14 @@ export default function CheckoutPage() {
       <div className="mt-6 grid gap-6 md:grid-cols-[1.6fr_1fr]">
         <form
           onSubmit={handlePayClick}
-          className="space-y-4 rounded-2xl border border-black/5 bg-white p-6 shadow-sm"
+          className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur"
         >
-          <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/50">
             Tickets
           </p>
 
           {items.length === 0 && (
-            <p className="text-sm text-neutral-700">
+            <p className="text-sm text-white/70">
               No event selected. Go back and pick one event.
             </p>
           )}
@@ -138,20 +138,18 @@ export default function CheckoutPage() {
             <div key={item.event.id} className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-lg font-semibold text-neutral-900">
+                  <p className="text-lg font-semibold text-white">
                     {item.event.title}
                   </p>
-                  <p className="text-sm text-neutral-600">
+                  <p className="text-sm text-white/70">
                     {item.event.date} · {item.event.time}
                   </p>
-                  <p className="text-xs text-neutral-500">
-                    {item.event.location}
-                  </p>
+                  <p className="text-xs text-white/50">{item.event.location}</p>
                 </div>
-                <div className="flex items-center gap-2 rounded-full border border-black/10">
+                <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/20">
                   <button
                     type="button"
-                    className="px-3 py-1 text-lg text-neutral-700"
+                    className="px-3 py-1 text-lg text-white/80 hover:text-white"
                     onClick={() =>
                       updateQuantity(
                         item.event.id,
@@ -162,12 +160,12 @@ export default function CheckoutPage() {
                   >
                     −
                   </button>
-                  <span className="px-3 text-neutral-900 font-semibold">
+                  <span className="px-3 font-semibold text-white">
                     {item.quantity}
                   </span>
                   <button
                     type="button"
-                    className="px-3 py-1 text-lg text-neutral-700"
+                    className="px-3 py-1 text-lg text-white/80 hover:text-white"
                     onClick={() =>
                       updateQuantity(item.event.id, item.quantity + 1)
                     }
@@ -180,8 +178,8 @@ export default function CheckoutPage() {
             </div>
           ))}
 
-          <div className="rounded-xl bg-neutral-50 p-4 text-sm text-neutral-700">
-            <p className="font-semibold text-neutral-900">
+          <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-white/80">
+            <p className="font-semibold text-white">
               Payment mode: {paymentMode}
             </p>
             {paymentMode === "MOCK" ? (
@@ -197,51 +195,39 @@ export default function CheckoutPage() {
             )}
           </div>
 
-          {error && (
-            <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+          {error && <Alert tone="error">{error}</Alert>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          <Button type="submit" fullWidth disabled={loading}>
             {loading ? "Processing..." : `Pay ₹${total}`}
-          </button>
+          </Button>
         </form>
 
-        <div className="space-y-4 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold text-neutral-900">
-            Order summary
-          </p>
+        <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur">
+          <p className="text-sm font-semibold text-white">Order summary</p>
           {items.length === 0 && (
-            <p className="text-sm text-neutral-600">No items in cart.</p>
+            <p className="text-sm text-white/60">No items in cart.</p>
           )}
           {items?.map((item) => (
             <div
               key={item?.event?._id}
-              className="flex items-center justify-between text-sm text-neutral-700"
+              className="flex items-center justify-between text-sm text-white/70"
             >
               <div>
-                <p className="font-semibold text-neutral-900">
-                  {item.event.title}
-                </p>
-                <p className="text-neutral-500">
+                <p className="font-semibold text-white">{item.event.title}</p>
+                <p className="text-white/50">
                   {item.quantity} x ₹{item.event.price}
                 </p>
               </div>
-              <p className="font-semibold text-neutral-900">
+              <p className="font-semibold text-white">
                 ₹{item.event.price * item.quantity}
               </p>
             </div>
           ))}
-          <div className="flex items-center justify-between border-t border-dashed border-black/10 pt-4 text-sm font-semibold text-neutral-900">
+          <div className="flex items-center justify-between border-t border-dashed border-white/15 pt-4 text-sm font-semibold text-white">
             <span>Total</span>
             <span>₹{total}</span>
           </div>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-white/50">
             Payments are mocked until Razorpay mode is enabled. Backend
             endpoints are prepared: /payment/create-order and /payment/verify.
           </p>
@@ -250,11 +236,11 @@ export default function CheckoutPage() {
 
       {showAuthModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-black/10 bg-white p-6 shadow-xl">
-            <h2 className="text-xl font-semibold text-neutral-900">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/60 p-6 shadow-xl backdrop-blur">
+            <h2 className="text-xl font-semibold text-white">
               Complete with OTP
             </h2>
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-white/70">
               If you&apos;re signed in, this would auto-skip. Otherwise enter
               details and verify via OTP.
             </p>

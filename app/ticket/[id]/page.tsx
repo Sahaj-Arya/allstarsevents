@@ -23,17 +23,17 @@ export default function TicketPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold text-neutral-900">Your ticket</h1>
+        <h1 className="text-3xl font-semibold text-white">Your ticket</h1>
         <Link
           href="/"
-          className="text-sm font-semibold text-neutral-700 underline"
+          className="text-sm font-semibold text-white/70 underline decoration-white/30 hover:text-white"
         >
           Back to events
         </Link>
       </div>
 
       {!booking && (
-        <div className="mt-6 rounded-2xl border border-black/5 bg-white p-6 text-neutral-700">
+        <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-6 text-white/70 backdrop-blur">
           Ticket not found. Complete a checkout to generate a ticket.
         </div>
       )}

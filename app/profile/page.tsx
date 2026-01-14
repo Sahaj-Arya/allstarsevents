@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useCart } from "../../lib/cart-context";
 import { UserProfile } from "../../lib/types";
@@ -39,16 +39,19 @@ export default function ProfilePage() {
   const isAuthed = Boolean(profile);
   const needsDetails = isAuthed && (!profile?.name || !profile?.email);
 
-  const syncTickets = async (token?: string, phoneNumber?: string) => {
-    const tickets = await fetchTickets(token, phoneNumber);
-    replaceBookings(tickets);
-  };
+  const syncTickets = useCallback(
+    async (token?: string, phoneNumber?: string) => {
+      const tickets = await fetchTickets(token, phoneNumber);
+      replaceBookings(tickets);
+    },
+    [replaceBookings]
+  );
 
   useEffect(() => {
     if (profile?.phone || profile?.token) {
       void syncTickets(profile.token, profile.phone);
     }
-  }, [profile?.phone]);
+  }, [profile?.phone, profile?.token, syncTickets]);
 
   const handleSendOtp = async () => {
     setError(null);
@@ -184,25 +187,24 @@ export default function ProfilePage() {
         }
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthed, profile?.phone]);
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold text-neutral-900">Profile</h1>
+        <h1 className="text-3xl font-semibold text-white">Profile</h1>
         <div className="flex items-center gap-3">
           {isAuthed && (
             <Button variant="secondary" onClick={handleLogout}>
               Logout
             </Button>
           )}
-          <Link
+          {/* <Link
             href="/checkout"
-            className="text-sm font-semibold text-neutral-700 underline"
+            className="text-sm font-semibold text-white/70 underline decoration-white/30 hover:text-white"
           >
             Checkout again
-          </Link>
+          </Link> */}
         </div>
       </div>
 
@@ -222,7 +224,7 @@ export default function ProfilePage() {
                   setOtpStatus(null);
                 }}
               />
-              <p className="mt-3 text-sm text-neutral-700">
+              <p className="mt-3 text-sm text-white/70">
                 {mode === "login"
                   ? "Login with phone + OTP to access your profile and tickets."
                   : "Create an account with phone + OTP, then complete your details."}
@@ -243,10 +245,7 @@ export default function ProfilePage() {
 
               <form onSubmit={handleVerify} className="mt-4 space-y-3">
                 {mode === "signup" && (
-                  <Alert
-                    tone="info"
-                    className="border border-dashed border-black/10"
-                  >
+                  <Alert tone="info" className="border-dashed">
                     Step 1: Fill details · Step 2: Send OTP · Step 3: Verify
                   </Alert>
                 )}
@@ -276,7 +275,7 @@ export default function ProfilePage() {
                 )}
 
                 {mode === "login" && (
-                  <Alert tone="info" className="border border-black/5">
+                  <Alert tone="info">
                     Login with your phone. You can add name/email later.
                   </Alert>
                 )}
@@ -329,24 +328,22 @@ export default function ProfilePage() {
 
           {isAuthed && (
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/50">
                 Profile
               </p>
-              <p className="text-sm text-neutral-700">
+              <p className="text-sm text-white/70">
                 You are signed in. Review or complete your details below.
               </p>
 
               {otpStatus && <Alert tone="info">{otpStatus}</Alert>}
 
               {!editingDetails && !needsDetails && (
-                <div className="rounded-xl border border-black/5 bg-neutral-50 p-4 text-sm text-neutral-800">
-                  <p className="font-semibold text-neutral-900">
-                    {profile?.name}
-                  </p>
-                  <p className="text-neutral-700">
+                <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-white/80">
+                  <p className="font-semibold text-white">{profile?.name}</p>
+                  <p className="text-white/70">
                     {profile?.email || "No email"}
                   </p>
-                  <p className="text-neutral-700">{profile?.phone}</p>
+                  <p className="text-white/70">{profile?.phone}</p>
                   <div className="mt-3 flex gap-2">
                     <Button
                       variant="secondary"
@@ -411,29 +408,29 @@ export default function ProfilePage() {
         </Card>
 
         <Card>
-          <p className="text-sm font-semibold text-neutral-900">Tickets</p>
+          <p className="text-sm font-semibold text-white">Tickets</p>
           {!isAuthed && (
-            <p className="mt-2 text-sm text-neutral-600">
+            <p className="mt-2 text-sm text-white/60">
               Login with OTP to view your tickets on this device.
             </p>
           )}
           {isAuthed && bookings.length === 0 && (
-            <p className="mt-2 text-sm text-neutral-600">No tickets yet.</p>
+            <p className="mt-2 text-sm text-white/60">No tickets yet.</p>
           )}
           {isAuthed && (
-            <div className="mt-3 max-h-140 space-y-4 overflow-y-auto pr-1 text-sm text-neutral-700">
+            <div className="mt-3 max-h-140 space-y-4 overflow-y-auto pr-1 text-sm text-white/70">
               {bookings.map((booking) => (
                 <div
                   key={booking.ticketToken}
-                  className="rounded-xl border border-black/5 bg-white p-3"
+                  className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-neutral-900">
+                      <p className="font-semibold text-white">
                         Booking ·{" "}
                         {booking.cartItems[0]?.event.title || "Tickets"}
                       </p>
-                      <p className="text-xs text-neutral-500">
+                      <p className="text-xs text-white/50">
                         Paid ₹{booking.amount} · {booking.paymentMode}
                         {booking.createdAt
                           ? ` · ${new Date(booking.createdAt).toLocaleString()}`
@@ -442,7 +439,7 @@ export default function ProfilePage() {
                     </div>
                     <Link
                       href={`/ticket/${booking.ticketToken}`}
-                      className="text-xs font-semibold underline"
+                      className="text-xs font-semibold text-white/70 underline decoration-white/30 hover:text-white"
                     >
                       View QR
                     </Link>

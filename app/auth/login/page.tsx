@@ -85,8 +85,8 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto max-w-md px-6 py-10">
-      <h1 className="text-3xl font-semibold text-neutral-900">Phone login</h1>
-      <p className="mt-2 text-sm text-neutral-700">
+      <h1 className="text-3xl font-semibold text-white">Phone login</h1>
+      <p className="mt-2 text-sm text-white/70">
         Backend handles OTP; this UI is ready to plug in.
       </p>
 
@@ -128,7 +128,7 @@ export default function LoginPage() {
 
       <Link
         href="/profile"
-        className="mt-4 inline-flex text-sm font-semibold text-neutral-700 underline"
+        className="mt-4 inline-flex text-sm font-semibold text-white/70 underline decoration-white/30 hover:text-white"
       >
         Go to profile
       </Link>

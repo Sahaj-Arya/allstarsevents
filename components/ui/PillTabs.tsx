@@ -26,8 +26,8 @@ export function PillTabs({ options, value, onChange }: PillTabsProps) {
             className={[
               "flex-1 rounded-full border px-3 py-2 text-sm font-semibold transition",
               isActive
-                ? "border-black bg-black text-white"
-                : "border-black/10 bg-white text-neutral-800 hover:border-black/30",
+                ? "border-rose-500/40 bg-rose-600 text-white"
+                : "border-white/10 bg-white/5 text-white/80 hover:border-white/20 hover:bg-white/10",
             ].join(" ")}
           >
             {opt.label}

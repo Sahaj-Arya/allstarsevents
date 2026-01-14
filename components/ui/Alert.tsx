@@ -11,9 +11,9 @@ type AlertProps = {
 };
 
 const toneStyles: Record<Tone, string> = {
-  info: "bg-neutral-50 text-neutral-700",
-  success: "bg-green-50 text-green-700",
-  error: "bg-red-50 text-red-700",
+  info: "border border-white/10 bg-white/5 text-white/80",
+  success: "border border-emerald-400/20 bg-emerald-400/10 text-emerald-200",
+  error: "border border-rose-400/20 bg-rose-400/10 text-rose-200",
 };
 
 export function Alert({ tone = "info", children, className }: AlertProps) {

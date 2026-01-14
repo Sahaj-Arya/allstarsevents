@@ -20,7 +20,7 @@ export function InputField({
   ...props
 }: InputFieldProps) {
   const base =
-    "w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-500";
+    "w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 disabled:cursor-not-allowed disabled:bg-white/5 disabled:text-white/40";
 
   return (
     <label
@@ -29,7 +29,7 @@ export function InputField({
         .join(" ")}
     >
       {label && (
-        <span className="text-sm font-semibold text-neutral-800">
+        <span className="text-sm font-semibold text-white/90">
           {label}
           {requiredMark && <span className="text-red-500">*</span>}
         </span>
@@ -38,8 +38,8 @@ export function InputField({
         className={[base, className].filter(Boolean).join(" ")}
         {...props}
       />
-      {hint && <p className="text-xs text-neutral-500">{hint}</p>}
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {hint && <p className="text-xs text-white/50">{hint}</p>}
+      {error && <p className="text-xs text-rose-300">{error}</p>}
     </label>
   );
 }
