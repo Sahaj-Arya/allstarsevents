@@ -24,6 +24,7 @@ const bookingSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     phone: { type: String, required: true },
     amount: { type: Number, required: true },
+    cartItems: { type: [cartItemSchema], default: [] },
     paymentMode: { type: String, enum: ["MOCK", "RAZORPAY"], default: "MOCK" },
     status: {
       type: String,

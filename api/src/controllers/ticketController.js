@@ -15,17 +15,41 @@ export async function getTickets(req, res) {
     createdAt: -1,
   });
 
-  // For each booking, populate cartItems with their referenced tickets
+  // Build cartItems from stored tickets (bookings may not persist cartItems)
   const enriched = await Promise.all(
     bookings.map(async (booking) => {
-      // For each cartItem, fetch its tickets by ticketIds
-      const cartItems = (booking.cartItems || []).map((ci) => ({
-        ...ci.toObject(),
-        ticketIds: ci.ticketIds || [],
-      }));
+      const tickets = await Ticket.find({ booking: booking._id });
+
+      const grouped = new Map();
+      for (const t of tickets) {
+        const key = [
+          t.eventId,
+          t.title,
+          t.price,
+          t.date,
+          t.time,
+          t.location,
+        ].join("|");
+
+        const existing = grouped.get(key) || {
+          eventId: t.eventId,
+          title: t.title,
+          price: t.price,
+          quantity: 0,
+          date: t.date,
+          time: t.time,
+          location: t.location,
+          ticketIds: [],
+        };
+
+        existing.quantity += 1;
+        existing.ticketIds.push(t._id);
+        grouped.set(key, existing);
+      }
+
       return {
         ...booking.toObject(),
-        cartItems,
+        cartItems: Array.from(grouped.values()),
       };
     })
   );

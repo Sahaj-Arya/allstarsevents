@@ -1,29 +1,37 @@
 import crypto from "crypto";
 import { Booking } from "../models/Booking.js";
-import { User } from "../models/User.js";
 import Ticket from "../models/Ticket.js";
 
 export function createPaymentController(razorpay) {
   return {
     createOrder: async (req, res) => {
-      const { amount, userPhone, cartItems, paymentMode } = req.body;
-      if (!amount) {
-        return res.status(400).json({ error: "amount required" });
+      const { amount, userPhone, cartItems } = req.body;
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "valid amount required" });
       }
 
       const phoneFromToken = req.user?.phone;
       const phone = phoneFromToken || userPhone;
       if (!phone) return res.status(400).json({ error: "user phone required" });
 
-      const user =
-        (await User.findOne({ phone })) ||
-        (await User.findOneAndUpdate(
-          { phone },
-          { phone },
-          { new: true, upsert: true, setDefaultsOnInsert: true }
-        ));
+      const normalizedCartItems =
+        cartItems
+          ?.map(
+            ({ eventId, title, price, quantity, date, time, location }) => ({
+              eventId,
+              title,
+              price,
+              quantity: Math.max(1, Number(quantity) || 1),
+              date,
+              time,
+              location,
+            })
+          )
+          .filter((item) => item.eventId) || [];
 
-      const ticketToken = crypto.randomUUID();
+      if (normalizedCartItems.length === 0) {
+        return res.status(400).json({ error: "cart items required" });
+      }
 
       // Always use Razorpay, do not allow MOCK mode
 
@@ -33,54 +41,8 @@ export function createPaymentController(razorpay) {
           currency: "INR",
           receipt: `rcpt_${Date.now()}`,
         });
-
-        // For each cart item, create as many tickets as quantity, collect ticketIds
-        const { Event } = await import("../models/Event.js");
-        // Step 1: Prepare ticket creation data (no booking ref yet)
-        const ticketDocsToCreate = [];
-        let ticketCount = 0;
-        for (const item of cartItems || []) {
-          const eventDoc = await Event.findOne({ id: item.eventId });
-          if (!eventDoc) continue;
-          for (let i = 0; i < (item.quantity || 1); i++) {
-            ticketDocsToCreate.push({
-              event: eventDoc._id,
-              user: user._id,
-              isScanned: false,
-              eventId: item.eventId,
-              title: item.title,
-              price: item.price,
-              date: item.date,
-              time: item.time,
-              location: item.location,
-            });
-            ticketCount++;
-          }
-        }
-
-        if (ticketCount === 0) {
-          return res
-            .status(400)
-            .json({ error: "No valid cart items to create booking." });
-        }
-
-        // Step 2: Create booking (no cartItems)
-        const booking = await Booking.create({
-          user: user._id,
-          phone,
-          amount,
-          paymentMode: "RAZORPAY",
-          status: "pending",
-          ticketToken,
-          razorpayOrderId: order.id,
-        });
-
-        // Step 3: Create tickets with booking ref
-        for (const ticketData of ticketDocsToCreate) {
-          await Ticket.create({ ...ticketData, booking: booking._id });
-        }
-
-        return res.json({ ok: true, order, booking });
+        // Only return order, do not create booking yet
+        return res.json({ ok: true, order });
       } catch (err) {
         return res.status(500).json({ error: err.message });
       }
@@ -93,6 +55,29 @@ export function createPaymentController(razorpay) {
         return res.status(400).json({ error: "missing fields" });
       }
 
+      const cartItems = Array.isArray(req.body.cartItems)
+        ? req.body.cartItems
+        : [];
+      let amount = Number(req.body.amount);
+      if (!amount || amount <= 0) {
+        amount = cartItems.reduce(
+          (sum, item) =>
+            sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+          0
+        );
+      }
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "valid amount required" });
+      }
+
+      if (!req.user?.id || !req.user?.phone) {
+        return res.status(401).json({ error: "auth required" });
+      }
+
+      const userId = req.user.id;
+      const phone = req.user.phone;
+
+      // Validate Razorpay signature
       const secret = process.env.RAZORPAY_KEY_SECRET || "";
       const hmac = crypto.createHmac("sha256", secret);
       hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
@@ -102,18 +87,58 @@ export function createPaymentController(razorpay) {
         return res.status(400).json({ error: "signature mismatch" });
       }
 
-      const booking = await Booking.findOneAndUpdate(
-        { razorpayOrderId: razorpay_order_id },
-        {
+      const ticketToken = crypto.randomUUID();
+
+      // Create booking only after successful payment
+      try {
+        const booking = await Booking.create({
+          user: userId,
+          phone,
+          amount,
+          paymentMode: "RAZORPAY",
           status: "paid",
+          ticketToken,
+          razorpayOrderId: razorpay_order_id,
           razorpayPaymentId: razorpay_payment_id,
-        },
-        { new: true }
-      );
+        });
 
-      if (!booking) return res.status(404).json({ error: "booking not found" });
+        // Create tickets
+        const { Event } = await import("../models/Event.js");
+        const ticketsToCreate = [];
 
-      return res.json({ ok: true, booking });
+        for (const cartItem of cartItems) {
+          const eventDoc = await Event.findOne({ id: cartItem.eventId });
+          if (!eventDoc) continue;
+          const quantity = Math.max(1, Number(cartItem.quantity) || 1);
+          for (let i = 0; i < quantity; i++) {
+            ticketsToCreate.push({
+              event: eventDoc._id,
+              user: booking.user,
+              booking: booking._id,
+              eventId: cartItem.eventId,
+              title: cartItem.title,
+              price: cartItem.price,
+              date: cartItem.date,
+              time: cartItem.time,
+              location: cartItem.location,
+            });
+          }
+        }
+
+        if (ticketsToCreate.length === 0) {
+          await booking.deleteOne();
+          return res
+            .status(400)
+            .json({ error: "no valid cart items to create tickets" });
+        }
+
+        const createdTickets = await Ticket.insertMany(ticketsToCreate);
+
+        return res.json({ ok: true, booking, tickets: createdTickets });
+      } catch (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      // ...existing code...
     },
   };
 }

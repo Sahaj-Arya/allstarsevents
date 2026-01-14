@@ -16,6 +16,7 @@ type ApiBooking = {
   _id?: string;
   id?: string;
   ticketToken: string;
+  phone?: string;
   cartItems?: Array<{
     eventId?: string;
     title?: string;
@@ -25,6 +26,7 @@ type ApiBooking = {
     time?: string;
     location?: string;
     type?: string;
+    ticketIds?: string[];
   }>;
   amount?: number;
   paymentMode?: PaymentMode;
@@ -79,7 +81,7 @@ function mapBookingFromApi(api: ApiBooking): Booking {
       type: (item.type as EventItem["type"]) || "event",
     },
     quantity: item.quantity || 1,
-    ticketIds: (item as any).ticketIds || [],
+    ticketIds: item.ticketIds || [],
   }));
 
   return {
@@ -90,7 +92,7 @@ function mapBookingFromApi(api: ApiBooking): Booking {
     status: api.status || "paid",
     ticketToken: api.ticketToken,
     createdAt: api.createdAt || new Date().toISOString(),
-    phone: (api as any).phone,
+    phone: api.phone,
   };
 }
 
@@ -135,6 +137,8 @@ export async function verifyPayment(params: {
   razorpayOrderId: string;
   razorpayPaymentId: string;
   razorpaySignature: string;
+  amount?: number;
+  cartItems?: CartItem[];
   token?: string;
 }): Promise<Booking> {
   const res = await fetch(`${API_BASE_URL}/payment/verify`, {
@@ -147,6 +151,10 @@ export async function verifyPayment(params: {
       razorpay_order_id: params.razorpayOrderId,
       razorpay_payment_id: params.razorpayPaymentId,
       razorpay_signature: params.razorpaySignature,
+      amount: params.amount,
+      cartItems: params.cartItems
+        ? mapCartItemsForApi(params.cartItems)
+        : undefined,
     }),
   });
 
@@ -218,7 +226,8 @@ export async function fetchUserByPhone(phone: string) {
       };
     }
     return { user: data.user || null, error: null, status: res.status };
-  } catch (err: any) {
-    return { user: null, error: err.message || "Network error", status: 500 };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Network error";
+    return { user: null, error: message, status: 500 };
   }
 }

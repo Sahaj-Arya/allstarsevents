@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  createPaymentOrder,
-  getPaymentMode,
-  getRazorpayKey,
-  verifyPayment,
-} from "./api";
+import { createPaymentOrder, getRazorpayKey, verifyPayment } from "./api";
 import { CartItem, Booking, UserProfile } from "./types";
 
 type RazorpayResponse = {
@@ -79,6 +74,8 @@ export async function startCheckout(
             razorpayOrderId: order.orderId,
             razorpayPaymentId: response.razorpay_payment_id,
             razorpaySignature: response.razorpay_signature,
+            amount,
+            cartItems,
             token: profile.token,
           });
           resolve(booking);
