@@ -11,12 +11,12 @@ export default function CartPage() {
     <div className="mx-auto max-w-5xl px-6 py-10">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-semibold text-white">Your selection</h1>
-        <Link
+        {/* <Link
           href="/checkout"
           className="text-sm font-semibold text-white/70 underline decoration-white/30 hover:text-white"
         >
           Go to checkout
-        </Link>
+        </Link> */}
       </div>
 
       <div className="mt-6 grid gap-4">
@@ -25,10 +25,11 @@ export default function CartPage() {
             No event selected. Choose one event and set tickets.
           </div>
         )}
-
-        {items.map((item) => (
-          <CartItemRow key={item.event.id} item={item} />
-        ))}
+        <div className="overflow-auto no-scrollbar">
+          {items?.map((item) => (
+            <CartItemRow key={item.event.id} item={item} />
+          ))}
+        </div>
       </div>
 
       <div className="mt-6 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
@@ -43,12 +44,12 @@ export default function CartPage() {
         >
           Checkout
         </Link>
-        <Link
+        {/* <Link
           href="/"
           className="rounded-full border border-white/15 bg-white/5 px-5 py-3 text-white/80 hover:bg-white/10"
         >
           Continue browsing
-        </Link>
+        </Link> */}
       </div>
     </div>
   );

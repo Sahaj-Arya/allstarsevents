@@ -21,7 +21,7 @@ export default function TicketPage() {
   );
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    <div className="mx-auto h-dvh max-w-4xl overflow-y-auto px-6 py-10 scrollbar-hide">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-semibold text-white">Your ticket</h1>
         <Link
@@ -39,12 +39,12 @@ export default function TicketPage() {
       )}
 
       {booking && (
-        <div className="mt-6">
+        <div className="mt-6 scrollbar-hide">
           <TicketCard booking={booking} />
 
           {((booking.tickets && booking.tickets.length > 0) ||
             booking.cartItems.length > 0) && (
-            <div className="-mx-6 mt-6 overflow-x-auto px-6">
+            <div className="-mx-6 mt-6 overflow-x-auto px-6 scrollbar-hide">
               <div className="flex snap-x snap-mandatory gap-3 pb-2">
                 {booking.tickets && booking.tickets.length > 0
                   ? booking.tickets.map((t) => (

@@ -199,12 +199,6 @@ export default function ProfilePage() {
               Logout
             </Button>
           )}
-          {/* <Link
-            href="/checkout"
-            className="text-sm font-semibold text-white/70 underline decoration-white/30 hover:text-white"
-          >
-            Checkout again
-          </Link> */}
         </div>
       </div>
 
@@ -418,8 +412,8 @@ export default function ProfilePage() {
             <p className="mt-2 text-sm text-white/60">No tickets yet.</p>
           )}
           {isAuthed && (
-            <div className="mt-3 max-h-140 space-y-4 overflow-y-auto pr-1 text-sm text-white/70">
-              {bookings.map((booking) => (
+            <div className="mt-3 max-h-140 space-y-4 overflow-y-auto pr-1 text-sm text-white/70 scrollbar-hide">
+              {bookings?.map((booking) => (
                 <div
                   key={booking.ticketToken}
                   className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur"
