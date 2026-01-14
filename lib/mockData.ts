@@ -2,6 +2,7 @@ import { EventItem } from "./types";
 
 export const mockEvents: EventItem[] = [
   {
+    _id: "evt-salsa-sunday",
     id: "evt-salsa-sunday",
     title: "Salsa Sundays",
     description:
@@ -14,6 +15,7 @@ export const mockEvents: EventItem[] = [
     type: "event",
   },
   {
+    _id: "cls-hiphop",
     id: "cls-hiphop",
     title: "Hip-Hop Foundation Class",
     description: "Drills, grooves, and choreography for all levels.",
@@ -25,6 +27,7 @@ export const mockEvents: EventItem[] = [
     type: "class",
   },
   {
+    _id: "evt-bachata-night",
     id: "evt-bachata-night",
     title: "Bachata Night & Workshop",
     description:
@@ -37,6 +40,7 @@ export const mockEvents: EventItem[] = [
     type: "event",
   },
   {
+    _id: "cls-contemporary",
     id: "cls-contemporary",
     title: "Contemporary Flow",
     description: "Floor work, lines, and musicality with guest choreographer.",

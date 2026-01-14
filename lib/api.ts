@@ -83,6 +83,7 @@ function mapCartItemsForApi(cartItems: CartItem[]) {
 function mapBookingFromApi(api: ApiBooking): Booking {
   const cartItems: CartItem[] = (api.cartItems || []).map((item, idx) => ({
     event: {
+      _id: item.eventId || `event-${idx + 1}`,
       id: item.eventId || `event-${idx + 1}`,
       title: item.title || "Ticket",
       description: "",

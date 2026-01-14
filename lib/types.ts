@@ -1,7 +1,7 @@
 export type EventType = "event" | "class";
 
 export type EventItem = {
-  _id: Key | null | undefined;
+  _id: string | null | undefined;
   id: string;
   title: string;
   description: string;

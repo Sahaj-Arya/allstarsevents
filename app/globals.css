@@ -9,12 +9,8 @@
   --accent: #e11d48;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* Removed invalid @theme inline block */
+/* Removed invalid @theme inline block */
 
 /* Dark-first UI: keep prefers-color-scheme support without flipping back to light */
 @media (prefers-color-scheme: light) {
