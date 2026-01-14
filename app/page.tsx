@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { EventCard } from "../components/EventCard";
 import { fetchEvents } from "../lib/api";
+import { Footer } from "@/components/Footer";
 
 export default async function Home() {
   const events = await fetchEvents();
@@ -16,7 +17,7 @@ export default async function Home() {
             <h1 className="text-3xl font-semibold">Events & Classes</h1>
           </div>
           <div className="flex gap-3 text-sm font-semibold text-white/80">
-            <Link
+            {/* <Link
               href="/cart"
               className="rounded-full border border-white/20 px-4 py-2 hover:bg-white/10"
             >
@@ -27,7 +28,7 @@ export default async function Home() {
               className="rounded-full bg-rose-600 px-4 py-2 text-white hover:bg-rose-500"
             >
               Checkout
-            </Link>
+            </Link> */}
           </div>
         </div>
 
@@ -37,6 +38,7 @@ export default async function Home() {
           ))}
         </div>
       </section>
+      {/* <Footer /> */}
     </div>
   );
 }
