@@ -19,11 +19,25 @@ export type CartItem = {
   ticketIds?: string[]; // array of Ticket _id for this cart item
 };
 
+export type Ticket = {
+  id: string;
+  eventId?: string;
+  title?: string;
+  price?: number;
+  date?: string;
+  time?: string;
+  location?: string;
+  seat?: string;
+  isScanned: boolean;
+  createdAt?: string;
+};
+
 export type PaymentMode = "RAZORPAY" | "MOCK";
 
 export type Booking = {
   id: string;
   cartItems: CartItem[];
+  tickets?: Ticket[];
   amount: number;
   paymentMode: PaymentMode;
   status: "pending" | "paid" | "failed" | "checked-in";

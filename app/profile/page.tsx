@@ -11,6 +11,10 @@ import { InputField } from "../../components/ui/InputField";
 import { Alert } from "../../components/ui/Alert";
 import { PillTabs } from "../../components/ui/PillTabs";
 import {
+  TicketInstanceCard,
+  TicketItemCard,
+} from "../../components/TicketCard";
+import {
   fetchTickets,
   updateProfileApi,
   fetchUserByPhone,
@@ -417,26 +421,48 @@ export default function ProfilePage() {
             <p className="mt-2 text-sm text-neutral-600">No tickets yet.</p>
           )}
           {isAuthed && (
-            <div className="mt-3 space-y-3 text-sm text-neutral-700">
+            <div className="mt-3 max-h-140 space-y-4 overflow-y-auto pr-1 text-sm text-neutral-700">
               {bookings.map((booking) => (
                 <div
                   key={booking.ticketToken}
-                  className="flex items-center justify-between rounded-lg border border-black/5 px-3 py-2"
+                  className="rounded-xl border border-black/5 bg-white p-3"
                 >
-                  <div>
-                    <p className="font-semibold text-neutral-900">
-                      {booking.cartItems[0]?.event.title}
-                    </p>
-                    <p className="text-neutral-500">
-                      Paid ₹{booking.amount} · {booking.paymentMode}
-                    </p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-neutral-900">
+                        Booking ·{" "}
+                        {booking.cartItems[0]?.event.title || "Tickets"}
+                      </p>
+                      <p className="text-xs text-neutral-500">
+                        Paid ₹{booking.amount} · {booking.paymentMode}
+                        {booking.createdAt
+                          ? ` · ${new Date(booking.createdAt).toLocaleString()}`
+                          : ""}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/ticket/${booking.ticketToken}`}
+                      className="text-xs font-semibold underline"
+                    >
+                      View QR
+                    </Link>
                   </div>
-                  <Link
-                    href={`/ticket/${booking.ticketToken}`}
-                    className="text-xs font-semibold underline"
-                  >
-                    View ticket
-                  </Link>
+
+                  <div className="-mx-3 mt-3 overflow-x-auto px-3">
+                    <div className="flex snap-x snap-mandatory gap-3 pb-2">
+                      {booking.tickets && booking.tickets.length > 0
+                        ? booking.tickets.map((t) => (
+                            <TicketInstanceCard key={t.id} ticket={t} />
+                          ))
+                        : booking.cartItems.map((_, idx) => (
+                            <TicketItemCard
+                              key={`${booking.ticketToken}-${idx}`}
+                              booking={booking}
+                              itemIndex={idx}
+                            />
+                          ))}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

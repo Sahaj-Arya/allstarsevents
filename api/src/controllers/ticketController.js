@@ -18,7 +18,22 @@ export async function getTickets(req, res) {
   // Build cartItems from stored tickets (bookings may not persist cartItems)
   const enriched = await Promise.all(
     bookings.map(async (booking) => {
-      const tickets = await Ticket.find({ booking: booking._id });
+      const tickets = await Ticket.find({ booking: booking._id }).sort({
+        createdAt: 1,
+      });
+
+      const ticketList = tickets.map((t) => ({
+        id: t._id.toString(),
+        eventId: t.eventId,
+        title: t.title,
+        price: t.price,
+        date: t.date,
+        time: t.time,
+        location: t.location,
+        seat: t.seat,
+        isScanned: Boolean(t.isScanned),
+        createdAt: t.createdAt,
+      }));
 
       const grouped = new Map();
       for (const t of tickets) {
@@ -50,6 +65,7 @@ export async function getTickets(req, res) {
       return {
         ...booking.toObject(),
         cartItems: Array.from(grouped.values()),
+        tickets: ticketList,
       };
     })
   );

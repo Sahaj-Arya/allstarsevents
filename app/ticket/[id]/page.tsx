@@ -4,7 +4,11 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCart } from "../../../lib/cart-context";
-import { TicketCard } from "../../../components/TicketCard";
+import {
+  TicketCard,
+  TicketInstanceCard,
+  TicketItemCard,
+} from "../../../components/TicketCard";
 
 export default function TicketPage() {
   const params = useParams<{ id: string }>();
@@ -37,6 +41,25 @@ export default function TicketPage() {
       {booking && (
         <div className="mt-6">
           <TicketCard booking={booking} />
+
+          {((booking.tickets && booking.tickets.length > 0) ||
+            booking.cartItems.length > 0) && (
+            <div className="-mx-6 mt-6 overflow-x-auto px-6">
+              <div className="flex snap-x snap-mandatory gap-3 pb-2">
+                {booking.tickets && booking.tickets.length > 0
+                  ? booking.tickets.map((t) => (
+                      <TicketInstanceCard key={t.id} ticket={t} />
+                    ))
+                  : booking.cartItems.map((_, idx) => (
+                      <TicketItemCard
+                        key={`${booking.ticketToken}-${idx}`}
+                        booking={booking}
+                        itemIndex={idx}
+                      />
+                    ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

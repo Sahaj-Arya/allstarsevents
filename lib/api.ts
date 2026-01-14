@@ -5,6 +5,7 @@ import {
   EventItem,
   PaymentMode,
   UserProfile,
+  Ticket,
 } from "./types";
 
 const API_BASE_URL =
@@ -32,6 +33,18 @@ type ApiBooking = {
   paymentMode?: PaymentMode;
   status?: Booking["status"];
   createdAt?: string;
+  tickets?: Array<{
+    id: string;
+    eventId?: string;
+    title?: string;
+    price?: number;
+    date?: string;
+    time?: string;
+    location?: string;
+    seat?: string;
+    isScanned?: boolean;
+    createdAt?: string;
+  }>;
 };
 
 export function getPaymentMode(): PaymentMode {
@@ -87,6 +100,20 @@ function mapBookingFromApi(api: ApiBooking): Booking {
   return {
     id: api._id || api.id || api.ticketToken,
     cartItems,
+    tickets: (api.tickets || []).map(
+      (t): Ticket => ({
+        id: t.id,
+        eventId: t.eventId,
+        title: t.title,
+        price: t.price,
+        date: t.date,
+        time: t.time,
+        location: t.location,
+        seat: t.seat,
+        isScanned: Boolean(t.isScanned),
+        createdAt: t.createdAt,
+      })
+    ),
     amount: api.amount ?? 0,
     paymentMode: api.paymentMode || PAYMENT_MODE,
     status: api.status || "paid",
