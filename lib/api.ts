@@ -113,8 +113,13 @@ export async function uploadImage(file: File): Promise<{
   });
 
   if (!res.ok) {
-    fireAlert("error", "Failed to upload image");
-    throw new Error("Failed to upload image");
+    const data = await res.json().catch(() => ({} as { error?: string }));
+    const message =
+      res.status === 413
+        ? "File too large"
+        : data?.error || "Failed to upload image";
+    fireAlert("error", message);
+    throw new Error(message);
   }
 
   fireAlert("success", "Image uploaded successfully");
