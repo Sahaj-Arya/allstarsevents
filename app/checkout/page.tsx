@@ -78,7 +78,7 @@ export default function CheckoutPage() {
   const handleAuthSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const requestIdToUse = otpRequestId || "bypass";
-    if (!otpRequestId && !BYPASS_OTP) {
+    if (!otpRequestId) {
       setError("Send OTP first");
       return;
     }

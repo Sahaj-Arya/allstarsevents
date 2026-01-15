@@ -83,7 +83,7 @@ export default function ProfilePage() {
       setError("Name and email required for signup");
       return;
     }
-    if (!otpRequestId && !BYPASS_OTP) {
+    if (!otpRequestId) {
       setError("Send OTP first");
       return;
     }
@@ -112,7 +112,10 @@ export default function ProfilePage() {
     setEmail(newProfile.email);
     const needs = !(newProfile.name && newProfile.email);
     setOtpStatus(mode === "signup" ? "Signed up via OTP" : "Logged in via OTP");
-    fireAlert("success", mode === "signup" ? "User signed up" : "User logged in");
+    fireAlert(
+      "success",
+      mode === "signup" ? "User signed up" : "User logged in"
+    );
     setEditingDetails(needs);
     await syncTickets(verified.token, phone);
   };
