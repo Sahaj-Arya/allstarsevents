@@ -111,4 +111,20 @@ router.post("/", upload.single("image"), async (req, res) => {
   }
 });
 
+router.get("/:filename", (req, res) => {
+  const { filename } = req.params;
+  if (!filename || filename.includes("..") || filename.includes("/")) {
+    return res.status(400).json({ error: "Invalid filename" });
+  }
+
+  const filePath = path.join(resolvedUploadDir, filename);
+  fs.access(filePath, fs.constants.R_OK, (err) => {
+    if (err) {
+      console.warn("[UPLOAD] File not found:", filePath);
+      return res.status(404).json({ error: "File not found" });
+    }
+    return res.sendFile(filePath);
+  });
+});
+
 export default router;
