@@ -33,6 +33,9 @@ export default function LoginPage() {
     }
     setLoading(true);
     const reqId = await sendOtp(phone);
+
+    console.log(reqId, "req");
+
     setLoading(false);
     if (reqId) {
       setRequestId(reqId);

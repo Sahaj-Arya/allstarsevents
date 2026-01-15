@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useCart } from "../../lib/cart-context";
 import { UserProfile } from "../../lib/types";
-import { BYPASS_OTP, STATIC_OTP, sendOtp, verifyOtp } from "../../lib/otp";
+import { STATIC_OTP, sendOtp, verifyOtp } from "../../lib/otp";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { InputField } from "../../components/ui/InputField";
@@ -65,12 +65,7 @@ export default function ProfilePage() {
     setOtpLoading(false);
     if (reqId) {
       setOtpRequestId(reqId);
-      if (BYPASS_OTP) setOtp(STATIC_OTP);
-      setOtpStatus(
-        BYPASS_OTP
-          ? `OTP bypassed (using ${STATIC_OTP})`
-          : `OTP sent (use ${STATIC_OTP})`
-      );
+      setOtpStatus("OTP sent");
     } else {
       setOtpStatus("Failed to send OTP");
     }

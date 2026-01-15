@@ -13,8 +13,51 @@ export async function sendOtp(req, res) {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = new Date(Date.now() + OTP_TTL_MS);
 
-  await OtpRequest.create({ phone, code, requestId, expiresAt });
-  console.info("OTP (dev)", { phone, code });
+  const staticOtp = process.env.STATIC_OTP || "000000";
+  const testNumbers = (process.env.OTP_TEST_NUMBERS || "")
+    .split(",")
+    .map((n) => n.trim())
+    .filter(Boolean);
+  const testCode = process.env.OTP_TEST_CODE || staticOtp;
+
+  const smsUser = process.env.SMS_UNAME;
+  const smsPass = process.env.SMS_PASS;
+  const smsSender = process.env.SMS_SENDER;
+  const smsBrand = process.env.SMS_BRAND || "RojgarApp";
+
+  const isTestNumber = testNumbers.includes(phone);
+  const otpToUse = isTestNumber ? testCode : code;
+
+  await OtpRequest.create({ phone, code: otpToUse, requestId, expiresAt });
+
+  if (isTestNumber) {
+    console.info("OTP test number; skipping SMS", { phone });
+    return res.json({ requestId });
+  }
+
+  if (!smsUser || !smsPass || !smsSender) {
+    return res.status(500).json({ error: "SMS provider not configured" });
+  }
+
+  const msg = `Hello! Please use the OTP ${otpToUse} to login to the ${smsBrand} dashboard. FMSPL`;
+  const url =
+    "http://164.52.195.161/API/SendMsg.aspx" +
+    `?uname=${smsUser}` +
+    `&pass=${smsPass}` +
+    `&send=${smsSender}` +
+    `&dest=${phone}` +
+    `&msg=${msg}` +
+    `&priority=1`;
+
+  try {
+    const resp = await fetch(url);
+
+    if (!resp.ok) {
+      return res.status(502).json({ error: "Failed to send OTP" });
+    }
+  } catch (err) {
+    return res.status(502).json({ error: "Failed to send OTP" });
+  }
 
   return res.json({ requestId });
 }
