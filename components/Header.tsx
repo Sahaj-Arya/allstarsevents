@@ -17,11 +17,11 @@ export function Header() {
           className="text-lg font-semibold tracking-tight text-white flex items-center gap-2"
         >
           <Image alt="AllStars" src={ALL_STARS_LOGO} width={40} height={40} />
-          <span className=" text-white/80 text-2xl">All Stars Studios</span>
+          <span className=" text-white/80 text-xl">All Stars Studios</span>
         </Link>
         <nav className="flex items-center gap-4 text-sm font-medium text-white/80">
           <Link href="/" className="hover:text-white">
-            Events & Classes
+            Events
           </Link>
           {/* <Link href="/cart" className="hover:text-white">
             Cart <span className="text-white/50">({cartCount})</span>

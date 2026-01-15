@@ -18,9 +18,15 @@ app.use(cors());
 app.use(express.json());
 
 const uploadDir = process.env.UPLOAD_DIR || "uploads";
-const resolvedUploadDir = path.resolve(uploadDir);
+const resolvedUploadDir = path.isAbsolute(uploadDir)
+  ? uploadDir
+  : path.resolve(process.cwd(), uploadDir);
 fs.mkdirSync(resolvedUploadDir, { recursive: true });
-const publicUploadBase = process.env.UPLOAD_PUBLIC_BASE || "/uploads";
+const publicUploadBaseRaw = process.env.UPLOAD_PUBLIC_BASE || "/uploads";
+const publicUploadBase =
+  publicUploadBaseRaw.startsWith("/") && !publicUploadBaseRaw.includes("..")
+    ? publicUploadBaseRaw
+    : "/uploads";
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 

@@ -66,6 +66,29 @@ export async function fetchEvents(): Promise<EventItem[]> {
   }
 }
 
+export async function fetchShareableTicket(
+  token: string
+): Promise<{ booking: Booking; focusTicketId: string | null } | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/tickets/share/${token}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      ticket: ApiBooking;
+      focusTicketId?: string | null;
+    };
+    if (!data?.ticket) return null;
+    return {
+      booking: mapBookingFromApi(data.ticket),
+      focusTicketId: data.focusTicketId ?? null,
+    };
+  } catch (err) {
+    console.warn("Failed to fetch shareable ticket", err);
+    return null;
+  }
+}
+
 export async function uploadImage(file: File): Promise<{
   id: string;
   url: string;

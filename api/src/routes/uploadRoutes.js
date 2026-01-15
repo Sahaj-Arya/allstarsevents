@@ -7,7 +7,9 @@ import { Upload } from "../models/Upload.js";
 const router = express.Router();
 
 const uploadDir = process.env.UPLOAD_DIR || "uploads";
-const resolvedUploadDir = path.resolve(uploadDir);
+const resolvedUploadDir = path.isAbsolute(uploadDir)
+  ? uploadDir
+  : path.resolve(process.cwd(), uploadDir);
 fs.mkdirSync(resolvedUploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -42,11 +44,19 @@ router.post("/", upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "No image uploaded" });
     }
 
-    const publicBase = process.env.UPLOAD_PUBLIC_BASE || "/uploads";
+    const publicBaseRaw = process.env.UPLOAD_PUBLIC_BASE || "/uploads";
+    const publicBase =
+      publicBaseRaw.startsWith("/") && !publicBaseRaw.includes("..")
+        ? publicBaseRaw
+        : "/uploads";
     const publicUrlBase =
       process.env.UPLOAD_PUBLIC_URL || `${req.protocol}://${req.get("host")}`;
+    // Always expose /uploads/filename as the public URL, regardless of storage location
     const pathValue = `${publicBase}/${req.file.filename}`;
-    const url = `${publicUrlBase}${pathValue}`;
+    // Ensure no accidental path traversal in URL
+    const url = `${publicUrlBase.replace(/\/$/, "")}${publicBase}/${
+      req.file.filename
+    }`;
 
     const uploadDoc = await Upload.create({
       filename: req.file.filename,

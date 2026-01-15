@@ -2,6 +2,7 @@
 
 import QRCode from "react-qr-code";
 import { Booking } from "../lib/types";
+import { FaShareAlt } from "react-icons/fa";
 
 export function TicketItemCard({
   booking,
@@ -45,6 +46,16 @@ export function TicketInstanceCard({
     isScanned: boolean;
   };
 }) {
+  const handleShare = async () => {
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}/ticket/${ticket.id}`;
+    if (navigator.share) {
+      await navigator.share({ title: ticket.title || "Ticket", url });
+    } else {
+      await navigator.clipboard.writeText(url);
+    }
+  };
+
   return (
     <div className="min-w-65 shrink-0 snap-start rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm backdrop-blur">
       <div className="flex items-start justify-between gap-3">
@@ -65,6 +76,15 @@ export function TicketInstanceCard({
         >
           {ticket.isScanned ? "Scanned" : "Active"}
         </span>
+        <button
+          type="button"
+          aria-label="Share ticket"
+          title="Share ticket"
+          onClick={handleShare}
+          className="ml-2 rounded-full border border-white/10 bg-white/5 p-2 text-white/80 transition hover:border-white/30 hover:bg-white/10"
+        >
+          <FaShareAlt />
+        </button>
       </div>
 
       <div className="mt-3 flex items-center justify-center rounded-xl border border-dashed border-white/15 bg-black/30 p-3">
@@ -91,15 +111,35 @@ export function TicketInstanceCard({
 
 export function TicketCard({ booking }: { booking: Booking }) {
   const firstItem = booking.cartItems[0];
+  const handleShare = async () => {
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}/ticket/${booking.ticketToken}`;
+    if (navigator.share) {
+      await navigator.share({ title: firstItem?.event.title || "Ticket", url });
+    } else {
+      await navigator.clipboard.writeText(url);
+    }
+  };
   return (
     <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur md:grid-cols-[2fr_1fr]">
       <div className="space-y-2">
         <p className="text-xs uppercase tracking-[0.2em] text-white/50">
           Ticket
         </p>
-        <h3 className="text-xl font-semibold text-white">
-          {firstItem?.event.title}
-        </h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-xl font-semibold text-white">
+            {firstItem?.event.title}
+          </h3>
+          <button
+            type="button"
+            aria-label="Share ticket"
+            title="Share ticket"
+            onClick={handleShare}
+            className="rounded-full border border-white/10 bg-white/5 p-2 text-white/80 transition hover:border-white/30 hover:bg-white/10"
+          >
+            <FaShareAlt />
+          </button>
+        </div>
         <p className="text-sm text-white/70">
           {firstItem?.event.date} · {firstItem?.event.time}
         </p>
