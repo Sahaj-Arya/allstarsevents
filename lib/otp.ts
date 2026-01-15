@@ -1,3 +1,5 @@
+import { fireAlert } from "./alerts";
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
 
@@ -14,9 +16,12 @@ export async function sendOtp(phone: string): Promise<string | null> {
     if (!res.ok) {
       throw new Error(data?.error || "Failed to send OTP");
     }
+    fireAlert("success", "OTP sent");
     return data.requestId || null;
   } catch (err) {
     console.warn("sendOtp failed", err);
+    const message = err instanceof Error ? err.message : "Failed to send OTP";
+    fireAlert("error", message);
     return null;
   }
 }

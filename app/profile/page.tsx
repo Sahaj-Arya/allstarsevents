@@ -20,6 +20,7 @@ import {
   fetchUserByPhone,
 } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
+import { fireAlert } from "../../lib/alerts";
 
 export default function ProfilePage() {
   const { bookings, replaceBookings } = useCart();
@@ -96,6 +97,7 @@ export default function ProfilePage() {
     setOtpLoading(false);
     if (!verified.ok) {
       setError("OTP verification failed");
+      fireAlert("error", "OTP verification failed");
       return;
     }
     const newProfile: UserProfile = {
@@ -110,6 +112,7 @@ export default function ProfilePage() {
     setEmail(newProfile.email);
     const needs = !(newProfile.name && newProfile.email);
     setOtpStatus(mode === "signup" ? "Signed up via OTP" : "Logged in via OTP");
+    fireAlert("success", mode === "signup" ? "User signed up" : "User logged in");
     setEditingDetails(needs);
     await syncTickets(verified.token, phone);
   };
@@ -126,6 +129,7 @@ export default function ProfilePage() {
     setError(null);
     setEditingDetails(false);
     setMode("login");
+    fireAlert("info", "Logged out");
   };
 
   const handleSaveDetails = async (e: FormEvent) => {

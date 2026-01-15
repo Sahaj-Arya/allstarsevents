@@ -10,7 +10,7 @@ import { UserProfile } from "../../lib/types";
 import { Button } from "../../components/ui/Button";
 import { InputField } from "../../components/ui/InputField";
 import { Alert } from "../../components/ui/Alert";
-import { BYPASS_OTP, STATIC_OTP, sendOtp, verifyOtp } from "../../lib/otp";
+import { STATIC_OTP, sendOtp, verifyOtp } from "../../lib/otp";
 import { useAuth } from "../../lib/auth-context";
 
 export default function CheckoutPage() {
@@ -278,12 +278,12 @@ export default function CheckoutPage() {
                     setOtpLoading(false);
                     if (reqId) {
                       setOtpRequestId(reqId);
-                      if (BYPASS_OTP) setOtp(STATIC_OTP);
-                      setOtpStatus(
-                        BYPASS_OTP
-                          ? `OTP bypassed (using ${STATIC_OTP})`
-                          : `OTP sent (use ${STATIC_OTP})`
-                      );
+                      // if (BYPASS_OTP) setOtp(STATIC_OTP);
+                      // setOtpStatus(
+                      //   BYPASS_OTP
+                      //     ? `OTP bypassed (using ${STATIC_OTP})`
+                      //     : `OTP sent (use ${STATIC_OTP})`
+                      // );
                     } else {
                       setOtpStatus("Failed to send OTP");
                     }
@@ -303,12 +303,12 @@ export default function CheckoutPage() {
                     setOtpLoading(false);
                     if (reqId) {
                       setOtpRequestId(reqId);
-                      if (BYPASS_OTP) setOtp(STATIC_OTP);
-                      setOtpStatus(
-                        BYPASS_OTP
-                          ? `OTP bypassed (using ${STATIC_OTP})`
-                          : `OTP resent (use ${STATIC_OTP})`
-                      );
+                      // if (BYPASS_OTP) setOtp(STATIC_OTP);
+                      // setOtpStatus(
+                      //   BYPASS_OTP
+                      //     ? `OTP bypassed (using ${STATIC_OTP})`
+                      //     : `OTP resent (use ${STATIC_OTP})`
+                      // );
                     } else {
                       setOtpStatus("Failed to resend");
                     }

@@ -6,11 +6,12 @@ import { Card } from "../../../components/ui/Card";
 import { Button } from "../../../components/ui/Button";
 import { InputField } from "../../../components/ui/InputField";
 import { Alert } from "../../../components/ui/Alert";
-import { sendOtp, verifyOtp, BYPASS_OTP, STATIC_OTP } from "../../../lib/otp";
+import { sendOtp, verifyOtp, STATIC_OTP } from "../../../lib/otp";
 import { UserProfile } from "../../../lib/types";
 import { fetchTickets } from "../../../lib/api";
 import { useCart } from "../../../lib/cart-context";
 import { useAuth } from "../../../lib/auth-context";
+import { fireAlert } from "../../../lib/alerts";
 
 export default function LoginPage() {
   const { replaceBookings } = useCart();
@@ -40,12 +41,12 @@ export default function LoginPage() {
     if (reqId) {
       setRequestId(reqId);
       setPhase("otp");
-      if (BYPASS_OTP) setOtp(STATIC_OTP);
-      setMessage(
-        BYPASS_OTP
-          ? `OTP bypassed (using ${STATIC_OTP})`
-          : `OTP sent. Use code ${STATIC_OTP} in dev.`
-      );
+      // if (BYPASS_OTP) setOtp(STATIC_OTP);
+      // setMessage(
+      //   BYPASS_OTP
+      //     ? `OTP bypassed (using ${STATIC_OTP})`
+      //     : `OTP sent. Use code ${STATIC_OTP} in dev.`
+      // );
     } else {
       setError("Failed to send OTP");
     }
@@ -54,7 +55,7 @@ export default function LoginPage() {
   const handleVerify = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!requestId && !BYPASS_OTP) {
+    if (!requestId) {
       setError("Send OTP first");
       return;
     }
@@ -67,6 +68,7 @@ export default function LoginPage() {
     if (!verified.ok) {
       setLoading(false);
       setError("OTP verification failed");
+      fireAlert("error", "OTP verification failed");
       return;
     }
 
@@ -84,6 +86,7 @@ export default function LoginPage() {
 
     setLoading(false);
     setMessage("Logged in via OTP. Tickets synced.");
+    fireAlert("success", "User logged in");
   };
 
   return (

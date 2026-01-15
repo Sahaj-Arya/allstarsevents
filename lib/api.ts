@@ -1,4 +1,5 @@
 import { mockEvents } from "./mockData";
+import { fireAlert } from "./alerts";
 import {
   Booking,
   CartItem,
@@ -61,6 +62,7 @@ export async function fetchEvents(): Promise<EventItem[]> {
     if (!res.ok) throw new Error("Failed to fetch events");
     return (await res.json()) as EventItem[];
   } catch (err) {
+    fireAlert("error", "Failed to fetch events");
     console.warn("Falling back to mock events", err);
     return mockEvents;
   }
@@ -73,7 +75,10 @@ export async function fetchShareableTicket(
     const res = await fetch(`${API_BASE_URL}/tickets/share/${token}`, {
       cache: "no-store",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      fireAlert("error", "Failed to load shared ticket");
+      return null;
+    }
     const data = (await res.json()) as {
       ticket: ApiBooking;
       focusTicketId?: string | null;
@@ -84,6 +89,7 @@ export async function fetchShareableTicket(
       focusTicketId: data.focusTicketId ?? null,
     };
   } catch (err) {
+    fireAlert("error", "Failed to load shared ticket");
     console.warn("Failed to fetch shareable ticket", err);
     return null;
   }
@@ -107,8 +113,11 @@ export async function uploadImage(file: File): Promise<{
   });
 
   if (!res.ok) {
+    fireAlert("error", "Failed to upload image");
     throw new Error("Failed to upload image");
   }
+
+  fireAlert("success", "Image uploaded successfully");
 
   return (await res.json()) as {
     id: string;
@@ -205,8 +214,11 @@ export async function createPaymentOrder(
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data.error) {
+    fireAlert("error", data.error || "Unable to create payment order");
     throw new Error(data.error || "Unable to create payment order");
   }
+
+  fireAlert("success", "Payment order created");
 
   return {
     orderId: data.order?.id || data.orderId || data.razorpayOrderId,
@@ -242,9 +254,12 @@ export async function verifyPayment(params: {
   });
 
   const data = await res.json().catch(() => ({}));
-  if (!res.ok || data.error)
+  if (!res.ok || data.error) {
+    fireAlert("error", data.error || "Payment verification failed");
     throw new Error(data.error || "Payment verification failed");
+  }
   if (!data.booking) throw new Error("Booking not found after verification");
+  fireAlert("success", "Payment verified successfully");
   return mapBookingFromApi(data.booking);
 }
 
@@ -257,7 +272,10 @@ export async function fetchTickets(
     ? `${API_BASE_URL}/tickets`
     : `${API_BASE_URL}/tickets?phone=${encodeURIComponent(phone || "")}`;
   const res = await fetch(url, { headers: authHeaders(token) });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    fireAlert("error", "Failed to fetch tickets");
+    return [];
+  }
   const data = await res.json().catch(() => ({}));
   const tickets: ApiBooking[] = data.tickets || [];
   return tickets.map(mapBookingFromApi);
@@ -275,8 +293,12 @@ export async function updateProfileApi(
     },
     body: JSON.stringify(update),
   });
-  if (!res.ok) throw new Error("Failed to update profile");
+  if (!res.ok) {
+    fireAlert("error", "Failed to update profile");
+    throw new Error("Failed to update profile");
+  }
   const data = await res.json();
+  fireAlert("success", "Profile updated");
   return data;
 }
 
@@ -288,10 +310,20 @@ export async function validateTicket(ticketToken: string) {
   });
 
   if (!res.ok) {
+    fireAlert("error", "Ticket validation failed");
     return { status: "invalid" as const };
   }
 
-  return res.json();
+  const data = await res.json();
+  const alreadyScanned =
+    data?.status === "already_scanned" ||
+    data?.status === "scanned" ||
+    data?.ticket?.isScanned === true;
+  fireAlert(
+    alreadyScanned ? "info" : "success",
+    alreadyScanned ? "Ticket already scanned" : "Ticket scanned"
+  );
+  return data;
 }
 
 export async function fetchUserByPhone(phone: string) {
@@ -302,15 +334,18 @@ export async function fetchUserByPhone(phone: string) {
     );
     const data = await res.json();
     if (!res.ok) {
+      fireAlert("error", data.error || "Unknown error");
       return {
         user: null,
         error: data.error || "Unknown error",
         status: res.status,
       };
     }
+    fireAlert("success", "User fetched");
     return { user: data.user || null, error: null, status: res.status };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Network error";
+    fireAlert("error", message);
     return { user: null, error: message, status: 500 };
   }
 }

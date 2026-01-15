@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import jwt from "jsonwebtoken";
 import { OtpRequest } from "../models/OtpRequest.js";
 import { User } from "../models/User.js";
+import { incrementOtpSent } from "../utils/stats.js";
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 
@@ -32,6 +33,11 @@ export async function sendOtp(req, res) {
 
   if (isTestNumber) {
     console.info("OTP test number; skipping SMS", { phone });
+    try {
+      await incrementOtpSent();
+    } catch (err) {
+      console.warn("Failed to increment OTP stats", err);
+    }
     return res.json({ requestId });
   }
 
@@ -54,6 +60,11 @@ export async function sendOtp(req, res) {
 
     if (!resp.ok) {
       return res.status(502).json({ error: "Failed to send OTP" });
+    }
+    try {
+      await incrementOtpSent();
+    } catch (err) {
+      console.warn("Failed to increment OTP stats", err);
     }
   } catch (err) {
     return res.status(502).json({ error: "Failed to send OTP" });
