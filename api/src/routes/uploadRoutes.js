@@ -64,7 +64,7 @@ router.post("/", upload.single("image"), async (req, res) => {
     // Always expose /uploads/filename as the public URL, regardless of storage location
     const pathValue = `${publicBase}/${req.file.filename}`;
     // Ensure no accidental path traversal in URL
-    const url = `${publicUrlBase.replace(/\/$/, "")}${publicBase}/$${
+    const url = `${publicUrlBase.replace(/\/$/, "")}${publicBase}/${
       req.file.filename
     }`;
 
@@ -125,6 +125,19 @@ router.get("/:filename", (req, res) => {
     }
     return res.sendFile(filePath);
   });
+});
+
+router.use((err, _req, res, _next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ error: "File too large" });
+    }
+    return res.status(400).json({ error: err.message });
+  }
+  if (err?.message) {
+    return res.status(400).json({ error: err.message });
+  }
+  return res.status(500).json({ error: "Upload failed" });
 });
 
 export default router;
