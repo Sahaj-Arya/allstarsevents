@@ -15,7 +15,7 @@ export function TicketItemCard({
   if (!item) return null;
 
   return (
-    <div className="min-w-65 shrink-0 snap-start rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm backdrop-blur">
+    <div className="w-[260px] min-w-[260px] max-w-[320px] sm:w-[300px] shrink-0 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm backdrop-blur">
       <p className="text-xs uppercase tracking-[0.2em] text-white/50">Ticket</p>
       <p className="mt-1 text-base font-semibold text-white">
         {item.event.title}
@@ -57,7 +57,7 @@ export function TicketInstanceCard({
   };
 
   return (
-    <div className="min-w-65 shrink-0 snap-start rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm backdrop-blur">
+    <div className="w-[260px] min-w-[260px] max-w-[320px] sm:w-[300px] shrink-0 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm backdrop-blur">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-white/50">

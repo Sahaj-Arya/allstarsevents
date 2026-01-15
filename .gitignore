@@ -26,3 +26,6 @@ pnpm-debug.log*
 
 # Coverage
 coverage/
+
+# Uploads (stored outside repo)
+uploads/

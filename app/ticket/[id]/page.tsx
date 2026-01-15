@@ -49,9 +49,11 @@ export default function TicketPage() {
   const resolvedBooking = booking || remoteBooking;
 
   return (
-    <div className="mx-auto h-dvh max-w-4xl overflow-y-auto px-6 py-10 scrollbar-hide">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold text-white">Your ticket</h1>
+    <div className="mx-auto min-h-svh max-w-5xl px-4 sm:px-6 py-8 sm:py-10">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-white">
+          Your ticket
+        </h1>
         <Link
           href="/"
           className="text-sm font-semibold text-white/70 underline decoration-white/30 hover:text-white"
@@ -75,8 +77,8 @@ export default function TicketPage() {
       {resolvedBooking &&
         ((resolvedBooking.tickets && resolvedBooking.tickets.length > 0) ||
           resolvedBooking.cartItems.length > 0) && (
-          <div className="mt-6 -mx-6 overflow-x-auto px-6 scrollbar-hide">
-            <div className="flex snap-x snap-mandatory gap-3 pb-2">
+          <div className="mt-6">
+            <div className="flex flex-nowrap gap-3 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-visible">
               {resolvedBooking.tickets && resolvedBooking.tickets.length > 0
                 ? resolvedBooking.tickets
                     .filter((t) =>

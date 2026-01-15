@@ -190,9 +190,11 @@ export default function ProfilePage() {
   }, [isAuthed, profile?.phone]);
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold text-white">Profile</h1>
+    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8 sm:py-10">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-white">
+          Profile
+        </h1>
         <div className="flex items-center gap-3">
           {isAuthed && (
             <Button variant="secondary" onClick={handleLogout}>
@@ -282,7 +284,7 @@ export default function ProfilePage() {
                   onChange={(e) => setPhone(e.target.value)}
                   disabled={isAuthed && !!profile?.phone}
                 />
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <Button
                     type="button"
                     variant="secondary"
@@ -338,7 +340,7 @@ export default function ProfilePage() {
                     {profile?.email || "No email"}
                   </p>
                   <p className="text-white/70">{profile?.phone}</p>
-                  <div className="mt-3 flex gap-2">
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                     <Button
                       variant="secondary"
                       fullWidth
@@ -382,7 +384,7 @@ export default function ProfilePage() {
                     readOnly
                     hint="Phone is tied to your OTP login. Logout to switch number."
                   />
-                  <div className="flex gap-2 pt-1">
+                  <div className="flex flex-col gap-2 pt-1 sm:flex-row">
                     <Button
                       type="button"
                       variant="secondary"
@@ -401,7 +403,7 @@ export default function ProfilePage() {
           )}
         </Card>
 
-        <Card>
+        <Card className="w-[380] md:w-full">
           <p className="text-sm font-semibold text-white">Tickets</p>
           {!isAuthed && (
             <p className="mt-2 text-sm text-white/60">
@@ -412,13 +414,13 @@ export default function ProfilePage() {
             <p className="mt-2 text-sm text-white/60">No tickets yet.</p>
           )}
           {isAuthed && (
-            <div className="mt-3 max-h-140 space-y-4 overflow-y-auto pr-1 text-sm text-white/70 scrollbar-hide">
+            <div className="mt-3 max-h-[60vh] space-y-4 overflow-y-auto pr-1 text-sm text-white/70 scrollbar-hide">
               {bookings?.map((booking) => (
                 <div
                   key={booking.ticketToken}
                   className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur"
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="font-semibold text-white">
                         Booking ·{" "}
@@ -439,8 +441,8 @@ export default function ProfilePage() {
                     </Link>
                   </div>
 
-                  <div className="-mx-3 mt-3 overflow-x-auto px-3">
-                    <div className="flex snap-x snap-mandatory gap-3 pb-2">
+                  <div className="mt-3 -mx-3 overflow-x-auto px-3">
+                    <div className="flex flex-nowrap gap-3 pb-2 sm:flex-wrap sm:overflow-visible">
                       {booking.tickets && booking.tickets.length > 0
                         ? booking.tickets.map((t) => (
                             <TicketInstanceCard key={t.id} ticket={t} />
