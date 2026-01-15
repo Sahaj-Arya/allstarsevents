@@ -28,7 +28,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype && file.mimetype.startsWith("image/")) {
       cb(null, true);
@@ -40,9 +40,19 @@ const upload = multer({
 
 router.post("/", upload.single("image"), async (req, res) => {
   try {
+    console.log("[UPLOAD] Incoming upload request");
     if (!req.file) {
+      console.warn("[UPLOAD] No file received");
       return res.status(400).json({ error: "No image uploaded" });
     }
+
+    console.log("[UPLOAD] File received:", {
+      originalName: req.file.originalname,
+      filename: req.file.filename,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+      path: req.file.path,
+    });
 
     const publicBaseRaw = process.env.UPLOAD_PUBLIC_BASE || "/uploads";
     const publicBase =
@@ -54,9 +64,18 @@ router.post("/", upload.single("image"), async (req, res) => {
     // Always expose /uploads/filename as the public URL, regardless of storage location
     const pathValue = `${publicBase}/${req.file.filename}`;
     // Ensure no accidental path traversal in URL
-    const url = `${publicUrlBase.replace(/\/$/, "")}${publicBase}/${
+    const url = `${publicUrlBase.replace(/\/$/, "")}${publicBase}/$${
       req.file.filename
     }`;
+
+    console.log("[UPLOAD] Saving upload doc to DB", {
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      mime: req.file.mimetype,
+      size: req.file.size,
+      path: pathValue,
+      url,
+    });
 
     const uploadDoc = await Upload.create({
       filename: req.file.filename,
@@ -65,6 +84,16 @@ router.post("/", upload.single("image"), async (req, res) => {
       size: req.file.size,
       path: pathValue,
       url,
+    });
+
+    console.log("[UPLOAD] Upload saved", {
+      id: uploadDoc._id,
+      url: uploadDoc.url,
+      path: uploadDoc.path,
+      filename: uploadDoc.filename,
+      size: uploadDoc.size,
+      mime: uploadDoc.mime,
+      createdAt: uploadDoc.createdAt,
     });
 
     return res.json({
@@ -77,6 +106,7 @@ router.post("/", upload.single("image"), async (req, res) => {
       createdAt: uploadDoc.createdAt,
     });
   } catch (err) {
+    console.error("[UPLOAD] Error during upload:", err);
     return res.status(500).json({ error: err.message });
   }
 });
