@@ -37,6 +37,18 @@ export function InputField({
       <input
         className={[base, className].filter(Boolean).join(" ")}
         {...props}
+        onInput={
+          props.type === "tel" || props.inputMode === "numeric"
+            ? (e) => {
+                const target = e.target as HTMLInputElement;
+                let val = target.value.replace(/[^0-9]/g, "");
+                if (props.maxLength) val = val.slice(0, props.maxLength);
+                target.value = val;
+                if (props.onInput) props.onInput(e);
+                if (props.onChange) props.onChange(e as any);
+              }
+            : props.onInput
+        }
       />
       {hint && <p className="text-xs text-white/50">{hint}</p>}
       {error && <p className="text-xs text-rose-300">{error}</p>}

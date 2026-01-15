@@ -47,9 +47,15 @@ export function GlobalAlertCenter() {
   if (!message) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
-        <Alert tone={tone} className="text-center shadow-lg">
+    <div
+      className="fixed left-1/2 z-50 w-full max-w-md -translate-x-1/2 px-4 flex justify-center pointer-events-none"
+      style={{ top: "50px", height: "70px" }}
+    >
+      <div className="w-full h-full flex items-start pt-4">
+        <Alert
+          tone={tone}
+          className="text-center shadow-lg pointer-events-auto w-full"
+        >
           {message}
         </Alert>
       </div>

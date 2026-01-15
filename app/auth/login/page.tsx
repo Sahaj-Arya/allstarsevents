@@ -106,7 +106,14 @@ export default function LoginPage() {
             required
             requiredMark
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            inputMode="numeric"
+            maxLength={10}
+            pattern="[0-9]{10}"
+            onChange={(e) => {
+              // Only allow numbers, max 10 digits
+              const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
+              setPhone(val);
+            }}
           />
 
           {phase === "otp" && (

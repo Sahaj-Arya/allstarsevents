@@ -260,11 +260,19 @@ export default function CheckoutPage() {
                 placeholder="you@example.com"
               />
               <InputField
+                value={modalPhone}
                 label="Phone"
                 required
                 requiredMark
-                value={modalPhone}
-                onChange={(e) => setModalPhone(e.target.value)}
+                inputMode="numeric"
+                maxLength={10}
+                pattern="[0-9]{10}"
+                onChange={(e) => {
+                  const val = e.target.value
+                    .replace(/[^0-9]/g, "")
+                    .slice(0, 10);
+                  setModalPhone(val);
+                }}
               />
               <div className="flex gap-2">
                 <Button
@@ -325,7 +333,13 @@ export default function CheckoutPage() {
                 required
                 requiredMark
                 value={otp}
-                onChange={(e) => setOtp(e.target.value)}
+                inputMode="numeric"
+                maxLength={6}
+                pattern="[0-9]{6}"
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
+                  setOtp(val);
+                }}
                 placeholder={STATIC_OTP || "123456"}
                 hint="Mock OTP flow; integrates with backend /auth/send-otp and /auth/verify-otp."
               />

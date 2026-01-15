@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
         port: "4000",
         pathname: "/uploads/**",
       },
+      {
+        protocol: "https",
+        hostname: "api.dev.events.allstarsstudio.in",
+        pathname: "/uploads/**",
+      },
     ],
   },
 };

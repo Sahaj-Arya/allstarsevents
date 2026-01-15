@@ -4,35 +4,36 @@ import { EventItem } from "../lib/types";
 import { useCart } from "../lib/cart-context";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { FaMapMarkerAlt, FaPlus } from "react-icons/fa";
+import { FaMapMarkerAlt } from "react-icons/fa";
 
 export function EventCard({ event }: { event: EventItem }) {
   const { addItem } = useCart();
   const router = useRouter();
 
+  const primaryImage = event.photo || event.images?.[0] || "";
+
   const bg =
-    event.photo && event.photo.startsWith("http")
+    primaryImage && primaryImage.startsWith("http")
       ? undefined
       : "linear-gradient(135deg,#0b1224,#121826)";
 
   // Google Maps search link for location
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    event.location
-  )}`;
+  const mapsUrl = event.location;
 
   const isActive = event.isActive !== false;
+
   return (
     <div
-      className={`group flex flex-col md:flex-row overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-lg backdrop-blur transition w-full min-h-[320px] ${
+      className={`group flex flex-col md:flex-row overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-lg backdrop-blur transition w-full min-h-80 ${
         !isActive
           ? "opacity-60 grayscale pointer-events-none"
           : "hover:border-white/30 hover:bg-white/10"
       }`}
     >
-      <div className="relative w-full md:w-80 h-56 md:h-auto flex-shrink-0 bg-neutral-900">
-        {event.photo ? (
+      <div className="relative w-full md:w-80 h-56 md:h-auto shrink-0 bg-neutral-900">
+        {primaryImage ? (
           <Image
-            src={event.photo}
+            src={primaryImage}
             alt={event.title}
             fill
             className="object-cover object-center"
@@ -46,13 +47,13 @@ export function EventCard({ event }: { event: EventItem }) {
         <div className="absolute bottom-3 left-3 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">
           ₹{event.price}
         </div>
-        <button
+        {/* <button
           className="absolute top-3 right-3 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 shadow"
           title="Add to cart"
           onClick={() => addItem(event, 1)}
         >
           <FaPlus />
-        </button>
+        </button> */}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-5 text-white">
         <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-white/60">
@@ -67,7 +68,25 @@ export function EventCard({ event }: { event: EventItem }) {
         </div>
         <h3 className="text-2xl font-bold leading-tight mb-1">{event.title}</h3>
         {event.placename && (
-          <div className="text-sm text-white/70 mb-1">{event.placename}</div>
+          <a
+            className="text-sm text-white/70 mb-1"
+            href={mapsUrl}
+            target="_blank"
+          >
+            <span className="font-semibold">
+              <div
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-blue-300 hover:underline mt-1"
+                title="View on Google Maps"
+              >
+                <FaMapMarkerAlt className="inline-block" />
+                {/* <span className="truncate max-w-45 align-middle">
+                {event.location}
+              </span> */}
+              </div>
+            </span>{" "}
+            {event.placename}
+          </a>
         )}
         <p className="text-base text-white/80 line-clamp-3 mb-2">
           {event.description}
@@ -75,7 +94,7 @@ export function EventCard({ event }: { event: EventItem }) {
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-white/80 mt-auto">
           <div className="flex flex-col">
             <span className="font-semibold text-white">{event.time}</span>
-            <a
+            {/* <a
               href={mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
@@ -83,10 +102,8 @@ export function EventCard({ event }: { event: EventItem }) {
               title="View on Google Maps"
             >
               <FaMapMarkerAlt className="inline-block" />
-              <span className="truncate max-w-[180px] align-middle">
-                {event.location}
-              </span>
-            </a>
+            
+            </a> */}
           </div>
           {isActive && (
             <button

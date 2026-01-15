@@ -257,7 +257,6 @@ export default function ProfilePage() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Your name"
-                      disabled={!profile?.name}
                     />
                     <InputField
                       label="Email"
@@ -267,7 +266,6 @@ export default function ProfilePage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      disabled={!profile?.email}
                     />
                   </>
                 )}
@@ -283,8 +281,15 @@ export default function ProfilePage() {
                   required
                   requiredMark
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  disabled={isAuthed && !!profile?.phone}
+                  inputMode="numeric"
+                  maxLength={10}
+                  pattern="[0-9]{10}"
+                  onChange={(e) => {
+                    const val = e.target.value
+                      .replace(/[^0-9]/g, "")
+                      .slice(0, 10);
+                    setPhone(val);
+                  }}
                 />
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Button
@@ -312,7 +317,15 @@ export default function ProfilePage() {
                   required
                   requiredMark
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
+                  inputMode="numeric"
+                  maxLength={6}
+                  pattern="[0-9]{6}"
+                  onChange={(e) => {
+                    const val = e.target.value
+                      .replace(/[^0-9]/g, "")
+                      .slice(0, 6);
+                    setOtp(val);
+                  }}
                   placeholder={STATIC_OTP || "123456"}
                   hint="Use the code sent to your phone. If bypass/static OTP is on, the placeholder shows the accepted code."
                 />
@@ -383,6 +396,9 @@ export default function ProfilePage() {
                   <InputField
                     label="Phone"
                     value={profile?.phone || phone}
+                    inputMode="numeric"
+                    maxLength={10}
+                    pattern="[0-9]{10}"
                     readOnly
                     hint="Phone is tied to your OTP login. Logout to switch number."
                   />

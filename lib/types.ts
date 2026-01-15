@@ -7,6 +7,7 @@ export type EventItem = {
   description: string;
   price: number;
   photo: string;
+  images?: string[];
   placename?: string;
   date: string;
   time: string;
