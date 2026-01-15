@@ -1,18 +1,26 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
+import fs from "fs";
 import { connectDb } from "./config/db.js";
 import { createRazorpay } from "./config/razorpay.js";
 import authRoutes from "./routes/authRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import ticketRoutes from "./routes/ticketRoutes.js";
 import eventsRoutes from "./routes/eventsRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const uploadDir = process.env.UPLOAD_DIR || "uploads";
+const resolvedUploadDir = path.resolve(uploadDir);
+fs.mkdirSync(resolvedUploadDir, { recursive: true });
+const publicUploadBase = process.env.UPLOAD_PUBLIC_BASE || "/uploads";
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
@@ -25,6 +33,8 @@ app.use("/auth", authRoutes);
 app.use("/payment", paymentRoutes(razorpay));
 app.use("/tickets", ticketRoutes);
 app.use("/events", eventsRoutes);
+app.use("/uploads", uploadRoutes);
+app.use(publicUploadBase, express.static(resolvedUploadDir));
 
 export async function initApp() {
   await connectDb(process.env.MONGO_URI);

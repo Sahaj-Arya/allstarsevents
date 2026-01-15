@@ -7,10 +7,12 @@ export type EventItem = {
   description: string;
   price: number;
   photo: string;
+  placename?: string;
   date: string;
   time: string;
   location: string;
   type: EventType;
+  isActive?: boolean;
 };
 
 export type CartItem = {

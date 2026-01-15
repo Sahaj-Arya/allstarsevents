@@ -14,7 +14,9 @@ export default async function Home() {
             <p className="text-xs uppercase tracking-[0.25em] text-white/60">
               Upcoming
             </p>
-            <h1 className="text-3xl font-semibold">Events & Classes</h1>
+            <h1 className="text-3xl font-semibold md:text-xl">
+              Events & Classes
+            </h1>
           </div>
           <div className="flex gap-3 text-sm font-semibold text-white/80">
             {/* <Link

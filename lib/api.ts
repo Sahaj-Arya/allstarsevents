@@ -66,6 +66,38 @@ export async function fetchEvents(): Promise<EventItem[]> {
   }
 }
 
+export async function uploadImage(file: File): Promise<{
+  id: string;
+  url: string;
+  path: string;
+  filename: string;
+  size: number;
+  mime: string;
+  createdAt: string;
+}> {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const res = await fetch(`${API_BASE_URL}/uploads`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to upload image");
+  }
+
+  return (await res.json()) as {
+    id: string;
+    url: string;
+    path: string;
+    filename: string;
+    size: number;
+    mime: string;
+    createdAt: string;
+  };
+}
+
 function mapCartItemsForApi(cartItems: CartItem[]) {
   return cartItems.map(({ event, quantity, ticketIds }) => ({
     eventId: event.id,
