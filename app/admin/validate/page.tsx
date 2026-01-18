@@ -49,7 +49,10 @@ export default function ValidatePage() {
         }));
         setCameras(normalized);
         if (!selectedCameraId && normalized.length > 0) {
-          setSelectedCameraId(normalized[0].id);
+          const backCamera = normalized.find((cam) =>
+            /back|rear|environment/i.test(cam.label),
+          );
+          setSelectedCameraId(backCamera?.id || normalized[0].id);
         }
       } catch (err) {
         if (mounted) {
@@ -88,6 +91,7 @@ export default function ValidatePage() {
       if (startInProgressRef.current) return;
       startInProgressRef.current = true;
       setScannerError(null);
+      setValidationResult(null);
       try {
         if (typeof window !== "undefined") {
           const isLocalhost =
