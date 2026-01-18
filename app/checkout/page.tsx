@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "../../lib/cart-context";
@@ -13,7 +13,7 @@ import { Alert } from "../../components/ui/Alert";
 import { STATIC_OTP, sendOtp, verifyOtp } from "../../lib/otp";
 import { useAuth } from "../../lib/auth-context";
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const { recordBooking, replaceBookings } = useCart();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -398,5 +398,19 @@ export default function CheckoutPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-4xl px-6 py-10 text-white/70">
+          Loading checkout...
+        </div>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
   );
 }
