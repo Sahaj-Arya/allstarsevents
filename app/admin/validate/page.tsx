@@ -6,7 +6,7 @@ import { validateTicket } from "../../../lib/api";
 type Html5QrcodeType = {
   start: (
     config: { facingMode: string },
-    options: { fps: number; qrbox: number },
+    options: { fps: number; qrbox: number; aspectRatio?: number },
     onSuccess: (text: string) => void,
     onError: (message: string) => void
   ) => Promise<void>;
@@ -22,11 +22,19 @@ export default function ValidatePage() {
   const [scannerError, setScannerError] = useState<string | null>(null);
   const qrRef = useRef<Html5QrcodeType | null>(null);
   const [permissionChecked, setPermissionChecked] = useState(false);
+  const [validationResult, setValidationResult] = useState<null | {
+    status?: string;
+    user?: { name?: string; phone?: string; email?: string };
+    ticket?: { id?: string; isScanned?: boolean; scannedAt?: string };
+    tickets?: Array<{ id?: string; isScanned?: boolean; scannedAt?: string }>;
+    error?: string;
+  }>(null);
 
   const runValidation = async (value: string) => {
     if (!value) return;
     setLoading(true);
     const res = await validateTicket(value);
+    setValidationResult(res);
     setResult(JSON.stringify(res));
     setLoading(false);
   };
@@ -42,6 +50,21 @@ export default function ValidatePage() {
 
     const init = async () => {
       try {
+        if (typeof window !== "undefined") {
+          const isLocalhost =
+            window.location.hostname === "localhost" ||
+            window.location.hostname === "127.0.0.1";
+          if (!window.isSecureContext && !isLocalhost) {
+            if (mounted) {
+              setScannerError(
+                "Camera requires HTTPS on mobile browsers. Use HTTPS or localhost."
+              );
+              setScannerActive(false);
+            }
+            return;
+          }
+        }
+
         if (!permissionChecked && navigator?.mediaDevices?.getUserMedia) {
           try {
             await navigator.mediaDevices.getUserMedia({ video: true });
@@ -63,9 +86,13 @@ export default function ValidatePage() {
         if (!mounted) return;
         const instance: Html5QrcodeType = new module.Html5Qrcode("qr-reader");
         qrRef.current = instance;
+        const qrbox =
+          typeof window !== "undefined"
+            ? Math.max(220, Math.min(320, Math.floor(window.innerWidth * 0.7)))
+            : 250;
         await instance.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: 250 },
+          { fps: 10, qrbox, aspectRatio: 1.0 },
           async (decodedText: string) => {
             setToken(decodedText);
             setScannerActive(false);
@@ -150,6 +177,32 @@ export default function ValidatePage() {
         >
           {loading ? "Checking..." : "Validate"}
         </button>
+        {validationResult && (
+          <div className="space-y-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white/80">
+            <p className="text-xs uppercase tracking-[0.2em] text-white/50">
+              Validation result
+            </p>
+            <p>Status: {validationResult.status || "unknown"}</p>
+            {validationResult.user && (
+              <div className="text-xs text-white/70">
+                <p>Name: {validationResult.user.name || "-"}</p>
+                <p>Phone: {validationResult.user.phone || "-"}</p>
+                <p>Email: {validationResult.user.email || "-"}</p>
+              </div>
+            )}
+            {validationResult.ticket?.id && (
+              <p className="text-xs text-white/60">
+                Ticket: {validationResult.ticket.id}
+              </p>
+            )}
+            {validationResult.tickets &&
+              validationResult.tickets.length > 0 && (
+                <p className="text-xs text-white/60">
+                  Tickets: {validationResult.tickets.length}
+                </p>
+              )}
+          </div>
+        )}
         {result && (
           <div className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white/80">
             {result}

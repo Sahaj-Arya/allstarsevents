@@ -257,7 +257,7 @@ export default function AdminTicketsPage() {
                   <td className="px-4 py-3 text-xs text-white/60">
                     {formatDateTime(ticket.scannedAt)}
                   </td>
-                  <td className="px-4 py-3 text-xs text-white/60">
+                  <td className="px-4 py-3 text-xs text-white/60 break-all">
                     {ticket.id}
                   </td>
                 </tr>

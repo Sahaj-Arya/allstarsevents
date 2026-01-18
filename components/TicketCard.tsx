@@ -17,13 +17,13 @@ export function TicketItemCard({
   return (
     <div className="w-[260px] min-w-[260px] max-w-[320px] sm:w-[300px] shrink-0 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm backdrop-blur">
       <p className="text-xs uppercase tracking-[0.2em] text-white/50">Ticket</p>
-      <p className="mt-1 text-base font-semibold text-white">
+      <p className="mt-1 text-base font-semibold text-white break-words">
         {item.event.title}
       </p>
       <p className="mt-1 text-sm text-white/70">
         {item.event.date} · {item.event.time}
       </p>
-      <p className="text-sm text-white/70">{item.event.location}</p>
+      <p className="text-sm text-white/70 break-words">{item.event.location}</p>
       <div className="mt-2 flex items-center justify-between text-sm text-white/80">
         <span>Qty: {item.quantity}</span>
         <span>₹{item.event.price} each</span>
@@ -67,7 +67,7 @@ export function TicketInstanceCard({
           <p className="text-xs uppercase tracking-[0.2em] text-white/50">
             Ticket
           </p>
-          <p className="mt-1 text-base font-semibold text-white">
+          <p className="mt-1 text-base font-semibold text-white break-words">
             {ticket.title || "Ticket"}
           </p>
         </div>
@@ -104,7 +104,9 @@ export function TicketInstanceCard({
         {ticket.date || ""}
         {ticket.time ? ` · ${ticket.time}` : ""}
       </p>
-      <p className="text-sm text-white/70">{ticket.location || ""}</p>
+      <p className="text-sm text-white/70 break-words">
+        {ticket.location || ""}
+      </p>
       {ticket.seat && (
         <p className="mt-1 text-sm text-white/80">Seat: {ticket.seat}</p>
       )}
@@ -113,7 +115,7 @@ export function TicketInstanceCard({
           Scanned: {scannedAtLabel}
         </p>
       )}
-      <p className="mt-2 text-xs text-white/40">ID: {ticket.id}</p>
+      <p className="mt-2 text-xs text-white/40 break-all">ID: {ticket.id}</p>
     </div>
   );
 }
@@ -136,7 +138,7 @@ export function TicketCard({ booking }: { booking: Booking }) {
           Ticket
         </p>
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-xl font-semibold text-white">
+          <h3 className="text-xl font-semibold text-white break-words">
             {firstItem?.event.title}
           </h3>
           <button

@@ -212,18 +212,34 @@ export async function validateTicket(req, res) {
       return res.status(400).json({ error: "token required" });
 
     if (mongoose.isValidObjectId(normalizedToken)) {
-      const ticket = await Ticket.findById(normalizedToken);
+      const ticket = await Ticket.findById(normalizedToken)
+        .populate("user", "name phone email")
+        .populate({
+          path: "booking",
+          select: "phone ticketToken user",
+          populate: { path: "user", select: "name phone email" },
+        });
       if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+      const userDoc = ticket.user || ticket.booking?.user;
+      const user = userDoc
+        ? {
+            name: userDoc.name || "",
+            phone: userDoc.phone || ticket.booking?.phone || "",
+            email: userDoc.email || "",
+          }
+        : { name: "", phone: ticket.booking?.phone || "", email: "" };
       if (ticket.isScanned) {
-        return res.json({ status: "already_scanned", ticket });
+        return res.json({ status: "already_scanned", ticket, user });
       }
       ticket.isScanned = true;
       ticket.scannedAt = new Date();
       await ticket.save();
-      return res.json({ status: "scanned", ticket });
+      return res.json({ status: "scanned", ticket, user });
     }
 
-    const booking = await Booking.findOne({ ticketToken: normalizedToken });
+    const booking = await Booking.findOne({ ticketToken: normalizedToken })
+      .populate("user", "name phone email")
+      .exec();
     if (!booking) return res.status(404).json({ error: "Ticket not found" });
 
     const tickets = await Ticket.find({ booking: booking._id });
@@ -232,8 +248,17 @@ export async function validateTicket(req, res) {
     }
 
     const allScanned = tickets.every((t) => t.isScanned);
+    const userDoc = booking.user;
+    const user = userDoc
+      ? {
+          name: userDoc.name || "",
+          phone: userDoc.phone || "",
+          email: userDoc.email || "",
+        }
+      : { name: "", phone: booking.phone || "", email: "" };
+
     if (allScanned) {
-      return res.json({ status: "already_scanned", tickets });
+      return res.json({ status: "already_scanned", tickets, user });
     }
 
     await Ticket.updateMany(
@@ -242,7 +267,7 @@ export async function validateTicket(req, res) {
     );
 
     const updated = await Ticket.find({ booking: booking._id });
-    return res.json({ status: "scanned", tickets: updated });
+    return res.json({ status: "scanned", tickets: updated, user });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
