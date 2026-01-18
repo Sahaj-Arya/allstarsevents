@@ -1,16 +1,13 @@
 "use client";
 
 import { EventItem } from "../lib/types";
-import { useCart } from "../lib/cart-context";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { FaMapMarkerAlt } from "react-icons/fa";
 
 export function EventCard({ event }: { event: EventItem }) {
-  const { addItem } = useCart();
-  const router = useRouter();
-
   const primaryImage = event.photo || event.images?.[0] || "";
+  const eventSlug = event.id || event._id || "";
 
   const bg =
     primaryImage && primaryImage.startsWith("http")
@@ -106,15 +103,12 @@ export function EventCard({ event }: { event: EventItem }) {
             </a> */}
           </div>
           {isActive && (
-            <button
-              onClick={() => {
-                addItem(event, 1);
-                router.push("/checkout");
-              }}
+            <Link
+              href={`/events/${eventSlug}`}
               className="rounded-full border border-white/30 bg-white/10 px-5 py-2 text-sm font-semibold text-white transition hover:border-white hover:bg-white/20"
             >
-              Book now
-            </button>
+              View details
+            </Link>
           )}
         </div>
       </div>

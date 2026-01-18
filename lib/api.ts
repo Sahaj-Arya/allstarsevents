@@ -68,6 +68,22 @@ export async function fetchEvents(): Promise<EventItem[]> {
   }
 }
 
+export async function fetchEventById(id: string): Promise<EventItem | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/events/${id}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error("Failed to fetch event");
+    return (await res.json()) as EventItem;
+  } catch (err) {
+    fireAlert("error", "Failed to fetch event");
+    console.warn("Falling back to mock event", err);
+    return (
+      mockEvents.find((event) => event.id === id || event._id === id) || null
+    );
+  }
+}
+
 export async function fetchShareableTicket(
   token: string
 ): Promise<{ booking: Booking; focusTicketId: string | null } | null> {

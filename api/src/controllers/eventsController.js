@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Event } from "../models/Event.js";
 
 const fallbackEvents = [
@@ -9,6 +10,17 @@ const fallbackEvents = [
     price: 899,
     photo: "/images/salsa.jpg",
     images: ["/images/salsa.jpg"],
+    media: ["/images/salsa.jpg"],
+    venue: "All Stars Studio",
+    category: "Social",
+    about: [
+      {
+        title: "What to expect",
+        description:
+          "Warm-up, partner fundamentals, and a social set with live percussion.",
+        images: ["/images/salsa.jpg"],
+      },
+    ],
     placename: "All Stars Studio",
     date: "2026-02-02",
     time: "18:00",
@@ -23,6 +35,16 @@ const fallbackEvents = [
     price: 699,
     photo: "/images/hiphop.jpg",
     images: ["/images/hiphop.jpg"],
+    media: ["/images/hiphop.jpg"],
+    venue: "Khar Studio",
+    category: "Workshop",
+    about: [
+      {
+        title: "Class flow",
+        description: "Foundation drills followed by choreography practice.",
+        images: ["/images/hiphop.jpg"],
+      },
+    ],
     placename: "Khar Studio",
     date: "2026-02-05",
     time: "19:30",
@@ -38,6 +60,16 @@ const fallbackEvents = [
     price: 1199,
     photo: "/images/bachata.jpg",
     images: ["/images/bachata.jpg"],
+    media: ["/images/bachata.jpg"],
+    venue: "Soho House",
+    category: "Night",
+    about: [
+      {
+        title: "Workshop",
+        description: "Focus on technique and connection with guided practice.",
+        images: ["/images/bachata.jpg"],
+      },
+    ],
     placename: "Soho House",
     date: "2026-02-10",
     time: "20:00",
@@ -52,6 +84,16 @@ const fallbackEvents = [
     price: 950,
     photo: "/images/contemporary.jpg",
     images: ["/images/contemporary.jpg"],
+    media: ["/images/contemporary.jpg"],
+    venue: "Bandra Studio",
+    category: "Class",
+    about: [
+      {
+        title: "Movement focus",
+        description: "Lines, musicality, and floor-work fundamentals.",
+        images: ["/images/contemporary.jpg"],
+      },
+    ],
     placename: "Bandra Studio",
     date: "2026-02-12",
     time: "17:00",
@@ -68,6 +110,27 @@ export async function listEvents(_req, res) {
       return res.json(fallbackEvents);
     }
     return res.json(events);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+export async function getEventById(req, res) {
+  try {
+    const { id } = req.params;
+    const query = [{ id }];
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query.push({ _id: id });
+    }
+    const event = await Event.findOne({ $or: query }).lean();
+    if (event) return res.json(event);
+
+    const fallback = fallbackEvents.find(
+      (item) => item.id === id || item._id === id
+    );
+    if (fallback) return res.json(fallback);
+
+    return res.status(404).json({ error: "Event not found" });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

@@ -8,6 +8,19 @@ const eventSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     photo: { type: String, default: "" },
     images: { type: [String], default: [] },
+    media: { type: [String], default: [] },
+    venue: { type: String, default: "" },
+    category: { type: String, default: "" },
+    about: {
+      type: [
+        {
+          title: { type: String, default: "" },
+          description: { type: String, default: "" },
+          images: { type: [String], default: [] },
+        },
+      ],
+      default: [],
+    },
     placename: { type: String, default: "" },
     date: { type: String, required: true },
     time: { type: String, required: true },

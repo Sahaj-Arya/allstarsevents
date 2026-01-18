@@ -1,5 +1,11 @@
 export type EventType = "event" | "class";
 
+export type EventAboutSection = {
+  title: string;
+  description: string;
+  images?: string[];
+};
+
 export type EventItem = {
   _id: string | null | undefined;
   id: string;
@@ -8,6 +14,10 @@ export type EventItem = {
   price: number;
   photo: string;
   images?: string[];
+  media?: string[];
+  venue?: string;
+  category?: string;
+  about?: EventAboutSection[];
   placename?: string;
   date: string;
   time: string;
