@@ -5,7 +5,7 @@ import { validateTicket } from "../../../lib/api";
 
 type Html5QrcodeType = {
   start: (
-    config: { facingMode: string },
+    config: string | { facingMode?: string; deviceId?: { exact: string } },
     options: { fps: number; qrbox: number; aspectRatio?: number },
     onSuccess: (text: string) => void,
     onError: (message: string) => void
@@ -22,6 +22,10 @@ export default function ValidatePage() {
   const [scannerError, setScannerError] = useState<string | null>(null);
   const qrRef = useRef<Html5QrcodeType | null>(null);
   const [permissionChecked, setPermissionChecked] = useState(false);
+  const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>(
+    []
+  );
+  const [selectedCameraId, setSelectedCameraId] = useState<string>("");
   const [validationResult, setValidationResult] = useState<null | {
     status?: string;
     user?: { name?: string; phone?: string; email?: string };
@@ -67,7 +71,10 @@ export default function ValidatePage() {
 
         if (!permissionChecked && navigator?.mediaDevices?.getUserMedia) {
           try {
-            await navigator.mediaDevices.getUserMedia({ video: true });
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+            });
+            stream.getTracks().forEach((track) => track.stop());
             if (mounted) setPermissionChecked(true);
           } catch (err) {
             const message =
@@ -83,22 +90,51 @@ export default function ValidatePage() {
         }
 
         const module = await import("html5-qrcode");
+        const Html5QrcodeCtor =
+          (module as any).Html5Qrcode ||
+          (module as any).default?.Html5Qrcode ||
+          (module as any).default;
+
         if (!mounted) return;
-        const instance: Html5QrcodeType = new module.Html5Qrcode("qr-reader");
+        if (!Html5QrcodeCtor) {
+          throw new Error("Html5Qrcode not available");
+        }
+
+        if (typeof Html5QrcodeCtor.getCameras === "function") {
+          const deviceList = await Html5QrcodeCtor.getCameras();
+          if (mounted) {
+            const normalized = (deviceList || []).map(
+              (d: any, idx: number) => ({
+                id: d.id || d.deviceId || `${idx}`,
+                label: d.label || `Camera ${idx + 1}`,
+              })
+            );
+            setCameras(normalized);
+            if (!selectedCameraId && normalized.length > 0) {
+              setSelectedCameraId(normalized[0].id);
+            }
+          }
+        }
+
+        const instance: Html5QrcodeType = new Html5QrcodeCtor("qr-reader");
         qrRef.current = instance;
         const qrbox =
           typeof window !== "undefined"
             ? Math.max(220, Math.min(320, Math.floor(window.innerWidth * 0.7)))
             : 250;
         await instance.start(
-          { facingMode: "environment" },
+          selectedCameraId ? selectedCameraId : { facingMode: "environment" },
           { fps: 10, qrbox, aspectRatio: 1.0 },
           async (decodedText: string) => {
             setToken(decodedText);
             setScannerActive(false);
             await runValidation(decodedText);
           },
-          () => {}
+          (message: string) => {
+            if (mounted && message && message !== scannerError) {
+              setScannerError(message);
+            }
+          }
         );
       } catch (err) {
         setScannerError(
@@ -122,7 +158,7 @@ export default function ValidatePage() {
           });
       }
     };
-  }, [scannerActive]);
+  }, [scannerActive, permissionChecked, selectedCameraId]);
 
   return (
     <div className="mx-auto max-w-lg px-6 py-10">
@@ -145,6 +181,22 @@ export default function ValidatePage() {
             {scannerActive ? "Stop scanner" : "Start scanner"}
           </button>
         </div>
+        {cameras.length > 0 && (
+          <label className="block text-xs text-white/70">
+            Camera
+            <select
+              value={selectedCameraId}
+              onChange={(e) => setSelectedCameraId(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+            >
+              {cameras.map((cam) => (
+                <option key={cam.id} value={cam.id}>
+                  {cam.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <div
           id="qr-reader"
           className="overflow-hidden rounded-xl border border-white/10 bg-black/40"

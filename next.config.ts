@@ -16,20 +16,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  allowedDevOrigins: [
-    "http://localhost",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
-    "http://192.168.1.39",
-    "http://192.168.1.39:3000",
-    "http://192.168.1.39:3001",
-    "http://0.0.0.0",
-    "http://0.0.0.0:3000",
-    "http://0.0.0.0:3001",
-  ],
+  allowedDevOrigins: ["*"],
 };
 
 export default nextConfig;
