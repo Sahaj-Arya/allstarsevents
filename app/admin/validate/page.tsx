@@ -11,6 +11,7 @@ export default function ValidatePage() {
   const [scannerError, setScannerError] = useState<string | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const startInProgressRef = useRef(false);
+  const lastScanRef = useRef<string | null>(null);
   const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>(
     [],
   );
@@ -26,9 +27,22 @@ export default function ValidatePage() {
   const runValidation = async (value: string) => {
     if (!value) return;
     setLoading(true);
-    const res = await validateTicket(value);
-    setValidationResult(res);
-    setLoading(false);
+    try {
+      const res = await validateTicket(value);
+      if (!res) {
+        setValidationResult({ status: "error", error: "No response" });
+        return;
+      }
+      setValidationResult(res);
+      if (res.error) setScannerError(res.error);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Validation request failed";
+      setValidationResult({ status: "error", error: message });
+      setScannerError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleValidate = async (e: FormEvent) => {
@@ -92,6 +106,7 @@ export default function ValidatePage() {
       startInProgressRef.current = true;
       setScannerError(null);
       setValidationResult(null);
+      lastScanRef.current = null;
       try {
         if (typeof window !== "undefined") {
           const isLocalhost =
@@ -121,6 +136,8 @@ export default function ValidatePage() {
           { fps: 8, qrbox: 240, aspectRatio: 1.0, disableFlip: true },
           async (decodedText) => {
             if (cancelled) return;
+            if (lastScanRef.current === decodedText) return;
+            lastScanRef.current = decodedText;
             setToken(decodedText);
             await runValidation(decodedText);
             setScannerActive(false);
@@ -229,6 +246,11 @@ export default function ValidatePage() {
               Result
             </p>
             <p>Status: {validationResult.status || "unknown"}</p>
+            {validationResult.error && (
+              <p className="text-xs text-rose-200">
+                Error: {validationResult.error}
+              </p>
+            )}
             {validationResult.user?.name && (
               <p className="text-xs text-white/70">
                 Attendee: {validationResult.user.name}
