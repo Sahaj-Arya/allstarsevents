@@ -239,6 +239,11 @@ export default function ValidatePage() {
             {scannerError}
           </div>
         )}
+        <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/70">
+          If scanning fails on iPhone/iPad, use the native Camera app to scan
+          the ticket QR. It will open the ticket page; copy the token and paste
+          it below.
+        </div>
       </div>
 
       <form
