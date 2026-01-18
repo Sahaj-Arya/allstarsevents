@@ -1,12 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "../../lib/cart-context";
-import { fetchTickets, getPaymentMode } from "../../lib/api";
+import { fetchEventById, fetchTickets, getPaymentMode } from "../../lib/api";
 import { startCheckout } from "../../lib/payment";
-import { UserProfile } from "../../lib/types";
+import { CartItem, EventItem, UserProfile } from "../../lib/types";
 import { Button } from "../../components/ui/Button";
 import { InputField } from "../../components/ui/InputField";
 import { Alert } from "../../components/ui/Alert";
@@ -14,10 +14,13 @@ import { STATIC_OTP, sendOtp, verifyOtp } from "../../lib/otp";
 import { useAuth } from "../../lib/auth-context";
 
 export default function CheckoutPage() {
-  const { items, total, recordBooking, updateQuantity, replaceBookings } =
-    useCart();
+  const { recordBooking, replaceBookings } = useCart();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { profile, setProfile } = useAuth();
+  const [event, setEvent] = useState<EventItem | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [eventLoading, setEventLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [modalName, setModalName] = useState(profile?.name || "");
   const [modalEmail, setModalEmail] = useState(profile?.email || "");
@@ -42,7 +45,36 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.phone]);
 
-  const proceedPayment = async (p: UserProfile) => {
+  const cartItems = useMemo<CartItem[]>(() => {
+    if (!event) return [];
+    return [{ event, quantity }];
+  }, [event, quantity]);
+
+  const total = useMemo(() => {
+    if (!event) return 0;
+    return event.price * quantity;
+  }, [event, quantity]);
+
+  useEffect(() => {
+    const eventId = searchParams.get("eventId");
+    const qty = Number(searchParams.get("qty"));
+    if (Number.isFinite(qty) && qty > 0) {
+      setQuantity(Math.floor(qty));
+    }
+
+    if (!eventId) {
+      setEvent(null);
+      setEventLoading(false);
+      return;
+    }
+
+    setEventLoading(true);
+    fetchEventById(eventId)
+      .then((data) => setEvent(data))
+      .finally(() => setEventLoading(false));
+  }, [searchParams]);
+
+  const proceedPayment = async (p: UserProfile, items: CartItem[]) => {
     if (!p.token) {
       setError("Please login again to continue");
       setShowAuthModal(true);
@@ -64,12 +96,12 @@ export default function CheckoutPage() {
 
   const handlePayClick = (e: FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) {
-      setError("Add at least one event");
+    if (!event) {
+      setError("Select an event to continue");
       return;
     }
     if (profile && profile.token) {
-      void proceedPayment(profile);
+      void proceedPayment(profile, cartItems);
     } else {
       setShowAuthModal(true);
     }
@@ -104,18 +136,24 @@ export default function CheckoutPage() {
     setProfile(newProfile);
     await syncTickets(verified.token, modalPhone);
     setShowAuthModal(false);
-    await proceedPayment(newProfile);
+    await proceedPayment(newProfile, cartItems);
   };
+
+  const adjustQuantity = (next: number) => {
+    setQuantity(Math.max(1, next));
+  };
+
+  const eventSlug = event?.id || event?._id || "";
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-semibold text-white">Checkout</h1>
         <Link
-          href="/cart"
+          href={eventSlug ? `/events/${eventSlug}` : "/"}
           className="text-sm font-semibold text-white/70 underline decoration-white/30 hover:text-white"
         >
-          Back to selection
+          Back to event
         </Link>
       </div>
 
@@ -128,47 +166,44 @@ export default function CheckoutPage() {
             Tickets
           </p>
 
-          {items.length === 0 && (
+          {eventLoading && (
+            <p className="text-sm text-white/70">Loading event...</p>
+          )}
+
+          {!eventLoading && !event && (
             <p className="text-sm text-white/70">
               No event selected. Go back and pick one event.
             </p>
           )}
 
-          {items.map((item) => (
-            <div key={item.event.id} className="flex flex-col gap-3">
+          {event && (
+            <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-lg font-semibold text-white">
-                    {item.event.title}
+                    {event.title}
                   </p>
                   <p className="text-sm text-white/70">
-                    {item.event.date} · {item.event.time}
+                    {event.date} · {event.time}
                   </p>
-                  <p className="text-xs text-white/50">{item.event.location}</p>
+                  <p className="text-xs text-white/50">{event.location}</p>
                 </div>
                 <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/20">
                   <button
                     type="button"
                     className="px-3 py-1 text-lg text-white/80 hover:text-white"
-                    onClick={() =>
-                      updateQuantity(
-                        item.event.id,
-                        Math.max(1, item.quantity - 1)
-                      )
-                    }
+                    onClick={() => adjustQuantity(quantity - 1)}
                     aria-label="Decrease tickets"
                   >
                     −
                   </button>
                   <span className="px-3 font-semibold text-white">
-                    {item.quantity}
+                    {quantity}
                   </span>
                   <button
                     type="button"
                     className="px-3 py-1 text-lg text-white/80 hover:text-white"
-                    onClick={() =>
-                      updateQuantity(item.event.id, item.quantity + 1)
-                    }
+                    onClick={() => adjustQuantity(quantity + 1)}
                     aria-label="Increase tickets"
                   >
                     +
@@ -176,7 +211,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
             </div>
-          ))}
+          )}
 
           <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-white/80">
             <p className="font-semibold text-white">
@@ -197,32 +232,29 @@ export default function CheckoutPage() {
 
           {error && <Alert tone="error">{error}</Alert>}
 
-          <Button type="submit" fullWidth disabled={loading}>
+          <Button type="submit" fullWidth disabled={loading || !event}>
             {loading ? "Processing..." : `Pay ₹${total}`}
           </Button>
         </form>
 
         <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur">
           <p className="text-sm font-semibold text-white">Order summary</p>
-          {items.length === 0 && (
-            <p className="text-sm text-white/60">No items in cart.</p>
+          {!event && (
+            <p className="text-sm text-white/60">No event selected.</p>
           )}
-          {items?.map((item) => (
-            <div
-              key={item?.event?._id}
-              className="flex items-center justify-between text-sm text-white/70"
-            >
+          {event && (
+            <div className="flex items-center justify-between text-sm text-white/70">
               <div>
-                <p className="font-semibold text-white">{item.event.title}</p>
+                <p className="font-semibold text-white">{event.title}</p>
                 <p className="text-white/50">
-                  {item.quantity} x ₹{item.event.price}
+                  {quantity} x ₹{event.price}
                 </p>
               </div>
               <p className="font-semibold text-white">
-                ₹{item.event.price * item.quantity}
+                ₹{event.price * quantity}
               </p>
             </div>
-          ))}
+          )}
           <div className="flex items-center justify-between border-t border-dashed border-white/15 pt-4 text-sm font-semibold text-white">
             <span>Total</span>
             <span>₹{total}</span>

@@ -1,4 +1,3 @@
-import { mockEvents } from "./mockData";
 import { fireAlert } from "./alerts";
 import {
   Booking,
@@ -63,8 +62,8 @@ export async function fetchEvents(): Promise<EventItem[]> {
     return (await res.json()) as EventItem[];
   } catch (err) {
     fireAlert("error", "Failed to fetch events");
-    console.warn("Falling back to mock events", err);
-    return mockEvents;
+    console.warn("Failed to fetch events", err);
+    return [];
   }
 }
 
@@ -77,10 +76,8 @@ export async function fetchEventById(id: string): Promise<EventItem | null> {
     return (await res.json()) as EventItem;
   } catch (err) {
     fireAlert("error", "Failed to fetch event");
-    console.warn("Falling back to mock event", err);
-    return (
-      mockEvents.find((event) => event.id === id || event._id === id) || null
-    );
+    console.warn("Failed to fetch event", err);
+    return null;
   }
 }
 
@@ -281,7 +278,36 @@ export async function verifyPayment(params: {
   }
   if (!data.booking) throw new Error("Booking not found after verification");
   fireAlert("success", "Payment verified successfully");
-  return mapBookingFromApi(data.booking);
+  const booking = mapBookingFromApi(data.booking);
+  if (Array.isArray(data.tickets) && data.tickets.length > 0) {
+    booking.tickets = data.tickets.map(
+      (t: {
+        _id?: string;
+        id?: string;
+        eventId?: string;
+        title?: string;
+        price?: number;
+        date?: string;
+        time?: string;
+        location?: string;
+        seat?: string;
+        isScanned?: boolean;
+        createdAt?: string;
+      }) => ({
+        id: t._id || t.id || "",
+        eventId: t.eventId,
+        title: t.title,
+        price: t.price,
+        date: t.date,
+        time: t.time,
+        location: t.location,
+        seat: t.seat,
+        isScanned: Boolean(t.isScanned),
+        createdAt: t.createdAt,
+      })
+    );
+  }
+  return booking;
 }
 
 export async function fetchTickets(

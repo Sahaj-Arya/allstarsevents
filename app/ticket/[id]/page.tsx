@@ -30,7 +30,9 @@ export default function TicketPage() {
     let mounted = true;
     const load = async () => {
       if (!token) return;
-      if (booking) return;
+      if (booking && (booking.tickets?.length || booking.cartItems.length)) {
+        return;
+      }
       setLoading(true);
       const fetched = await fetchShareableTicket(token);
       if (mounted) {
