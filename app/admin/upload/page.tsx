@@ -39,9 +39,9 @@ export default function UploadImagePage() {
 
   return (
     <div className="mx-auto max-w-lg px-6 py-10">
-      <h1 className="text-3xl font-semibold text-white">Upload image</h1>
+      <h1 className="text-3xl font-semibold text-white">Upload media</h1>
       <p className="mt-2 text-sm text-white/70">
-        Upload an event image and get a public URL to use in events.
+        Upload an image or video and get a public URL to use in events.
       </p>
 
       <form
@@ -49,10 +49,10 @@ export default function UploadImagePage() {
         className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur"
       >
         <label className="block space-y-2">
-          <span className="text-sm font-semibold text-white">Image file</span>
+          <span className="text-sm font-semibold text-white">Media file</span>
           <input
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white file:mr-4 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-white/20"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             required

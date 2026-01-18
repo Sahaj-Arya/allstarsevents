@@ -38,6 +38,7 @@ const razorpay = createRazorpay(
 app.use("/auth", authRoutes);
 app.use("/payment", paymentRoutes(razorpay));
 app.use("/tickets", ticketRoutes);
+app.use("/ticket", ticketRoutes);
 app.use("/events", eventsRoutes);
 app.use("/uploads", uploadRoutes);
 app.use(publicUploadBase, express.static(resolvedUploadDir));

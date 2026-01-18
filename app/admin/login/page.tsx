@@ -26,7 +26,7 @@ export default function AdminLoginPage() {
         throw new Error(data?.error || "Invalid password");
       }
 
-      router.push("/admin/validate");
+      router.push("/admin");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

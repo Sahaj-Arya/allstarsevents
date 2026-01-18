@@ -44,8 +44,12 @@ export function TicketInstanceCard({
     location?: string;
     seat?: string;
     isScanned: boolean;
+    scannedAt?: string;
   };
 }) {
+  const scannedAtLabel = ticket.scannedAt
+    ? new Date(ticket.scannedAt).toLocaleString()
+    : "";
   const handleShare = async () => {
     if (typeof window === "undefined") return;
     const url = `${window.location.origin}/ticket/${ticket.id}`;
@@ -103,6 +107,11 @@ export function TicketInstanceCard({
       <p className="text-sm text-white/70">{ticket.location || ""}</p>
       {ticket.seat && (
         <p className="mt-1 text-sm text-white/80">Seat: {ticket.seat}</p>
+      )}
+      {ticket.isScanned && scannedAtLabel && (
+        <p className="mt-1 text-xs text-emerald-200/80">
+          Scanned: {scannedAtLabel}
+        </p>
       )}
       <p className="mt-2 text-xs text-white/40">ID: {ticket.id}</p>
     </div>

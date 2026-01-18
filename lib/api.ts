@@ -1,5 +1,6 @@
 import { fireAlert } from "./alerts";
 import {
+  AdminTicketListItem,
   Booking,
   CartItem,
   EventItem,
@@ -8,8 +9,10 @@ import {
   Ticket,
 } from "./types";
 
+const DEFAULT_API_HOST =
+  typeof window !== "undefined" ? window.location.hostname : "localhost";
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || `http://${DEFAULT_API_HOST}:4000`;
 const PAYMENT_MODE = "RAZORPAY";
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
 
@@ -43,6 +46,7 @@ type ApiBooking = {
     location?: string;
     seat?: string;
     isScanned?: boolean;
+    scannedAt?: string;
     createdAt?: string;
   }>;
 };
@@ -130,12 +134,12 @@ export async function uploadImage(file: File): Promise<{
     const message =
       res.status === 413
         ? "File too large"
-        : data?.error || "Failed to upload image";
+        : data?.error || "Failed to upload media";
     fireAlert("error", message);
     throw new Error(message);
   }
 
-  fireAlert("success", "Image uploaded successfully");
+  fireAlert("success", "Media uploaded successfully");
 
   return (await res.json()) as {
     id: string;
@@ -145,6 +149,122 @@ export async function uploadImage(file: File): Promise<{
     size: number;
     mime: string;
     createdAt: string;
+  };
+}
+
+export async function createEvent(payload: {
+  id: string;
+  title: string;
+  description?: string;
+  price: number;
+  photo?: string;
+  images?: string[];
+  media?: string[];
+  placename?: string;
+  venue?: string;
+  category?: string;
+  date: string;
+  time: string;
+  location: string;
+  type?: EventItem["type"];
+  isActive?: boolean;
+  about?: EventItem["about"];
+}): Promise<EventItem> {
+  const res = await fetch(`${API_BASE_URL}/events`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({} as { error?: string }));
+  if (!res.ok) {
+    const message = data?.error || "Failed to create event";
+    fireAlert("error", message);
+    throw new Error(message);
+  }
+  fireAlert("success", "Event created");
+  return data as EventItem;
+}
+
+export async function updateEvent(
+  id: string,
+  payload: Partial<EventItem>
+): Promise<EventItem> {
+  const res = await fetch(`${API_BASE_URL}/events/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({} as { error?: string }));
+  if (!res.ok) {
+    const message = data?.error || "Failed to update event";
+    fireAlert("error", message);
+    throw new Error(message);
+  }
+  fireAlert("success", "Event updated");
+  return data as EventItem;
+}
+
+export async function fetchTicketsByPhoneAdmin(
+  phone: string
+): Promise<Booking[]> {
+  if (!phone) return [];
+  const res = await fetch(
+    `${API_BASE_URL}/tickets/search?phone=${encodeURIComponent(phone)}`
+  );
+  if (!res.ok) {
+    fireAlert("error", "Failed to fetch tickets");
+    return [];
+  }
+  const data = await res.json().catch(() => ({}));
+  const tickets: ApiBooking[] = data.tickets || [];
+  return tickets.map(mapBookingFromApi);
+}
+
+export async function fetchTicketByTokenAdmin(token: string): Promise<{
+  booking: Booking | null;
+  focusTicketId: string | null;
+}> {
+  if (!token) return { booking: null, focusTicketId: null };
+  const res = await fetch(
+    `${API_BASE_URL}/tickets/search?token=${encodeURIComponent(token)}`
+  );
+  if (!res.ok) {
+    fireAlert("error", "Failed to fetch ticket");
+    return { booking: null, focusTicketId: null };
+  }
+  const data = (await res.json().catch(() => ({}))) as {
+    ticket?: ApiBooking;
+    focusTicketId?: string | null;
+  };
+  if (!data.ticket) return { booking: null, focusTicketId: null };
+  return {
+    booking: mapBookingFromApi(data.ticket),
+    focusTicketId: data.focusTicketId ?? null,
+  };
+}
+
+export async function fetchAllTicketsAdmin(
+  page = 1,
+  limit = 200
+): Promise<{
+  tickets: AdminTicketListItem[];
+  total: number;
+  page: number;
+  limit: number;
+}> {
+  const res = await fetch(
+    `${API_BASE_URL}/tickets/list?page=${page}&limit=${limit}`
+  );
+  if (!res.ok) {
+    fireAlert("error", "Failed to fetch tickets list");
+    return { tickets: [], total: 0, page, limit };
+  }
+  const data = await res.json().catch(() => ({}));
+  return {
+    tickets: data.tickets || [],
+    total: data.total || 0,
+    page: data.page || page,
+    limit: data.limit || limit,
   };
 }
 
@@ -194,6 +314,7 @@ function mapBookingFromApi(api: ApiBooking): Booking {
         location: t.location,
         seat: t.seat,
         isScanned: Boolean(t.isScanned),
+        scannedAt: t.scannedAt,
         createdAt: t.createdAt,
       })
     ),
@@ -350,10 +471,36 @@ export async function updateProfileApi(
 }
 
 export async function validateTicket(ticketToken: string) {
+  const normalizeToken = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    try {
+      if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+        const url = new URL(trimmed);
+        const byQuery =
+          url.searchParams.get("token") || url.searchParams.get("id");
+        if (byQuery) return byQuery;
+        const match = url.pathname.match(/\/ticket\/([^/]+)$/);
+        if (match?.[1]) return match[1];
+        const parts = url.pathname.split("/").filter(Boolean);
+        return parts[parts.length - 1] || trimmed;
+      }
+    } catch {
+      // fall through to regex parsing
+    }
+
+    const pathMatch = trimmed.match(/\/ticket\/([^/?#]+)/);
+    if (pathMatch?.[1]) return pathMatch[1];
+    const queryMatch = trimmed.match(/[?&](token|id)=([^&]+)/);
+    if (queryMatch?.[2]) return queryMatch[2];
+    return trimmed;
+  };
+
+  const normalizedToken = normalizeToken(ticketToken);
   const res = await fetch(`${API_BASE_URL}/ticket/validate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: ticketToken }),
+    body: JSON.stringify({ token: normalizedToken }),
   });
 
   if (!res.ok) {

@@ -42,6 +42,7 @@ export type Ticket = {
   location?: string;
   seat?: string;
   isScanned: boolean;
+  scannedAt?: string;
   createdAt?: string;
 };
 
@@ -65,4 +66,22 @@ export type UserProfile = {
   phone: string;
   token?: string;
   userId?: string;
+};
+
+export type AdminTicketListItem = {
+  id: string;
+  eventId?: string;
+  title?: string;
+  date?: string;
+  time?: string;
+  location?: string;
+  seat?: string;
+  isScanned: boolean;
+  scannedAt?: string;
+  createdAt?: string;
+  bookingToken?: string;
+  user?: {
+    name?: string;
+    phone?: string;
+  };
 };
