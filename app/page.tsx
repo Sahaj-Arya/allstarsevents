@@ -3,6 +3,8 @@ import { EventCard } from "../components/EventCard";
 import { fetchEvents } from "../lib/api";
 import { Footer } from "@/components/Footer";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const events = await fetchEvents();
 

@@ -1,29 +1,18 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { Html5Qrcode } from "html5-qrcode";
 import { validateTicket } from "../../../lib/api";
-
-type Html5QrcodeType = {
-  start: (
-    config: string | { facingMode?: string; deviceId?: { exact: string } },
-    options: { fps: number; qrbox: number; aspectRatio?: number },
-    onSuccess: (text: string) => void,
-    onError: (message: string) => void
-  ) => Promise<void>;
-  stop: () => Promise<void>;
-  clear: () => void;
-};
 
 export default function ValidatePage() {
   const [token, setToken] = useState("");
-  const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [scannerActive, setScannerActive] = useState(false);
   const [scannerError, setScannerError] = useState<string | null>(null);
-  const qrRef = useRef<Html5QrcodeType | null>(null);
-  const [permissionChecked, setPermissionChecked] = useState(false);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const startInProgressRef = useRef(false);
   const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>(
-    []
+    [],
   );
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
   const [validationResult, setValidationResult] = useState<null | {
@@ -39,7 +28,6 @@ export default function ValidatePage() {
     setLoading(true);
     const res = await validateTicket(value);
     setValidationResult(res);
-    setResult(JSON.stringify(res));
     setLoading(false);
   };
 
@@ -50,115 +38,117 @@ export default function ValidatePage() {
 
   useEffect(() => {
     let mounted = true;
-    if (!scannerActive) return undefined;
 
-    const init = async () => {
+    const loadCameras = async () => {
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        if (!mounted) return;
+        const normalized = (devices || []).map((d, idx) => ({
+          id: d.id || `${idx}`,
+          label: d.label || `Camera ${idx + 1}`,
+        }));
+        setCameras(normalized);
+        if (!selectedCameraId && normalized.length > 0) {
+          setSelectedCameraId(normalized[0].id);
+        }
+      } catch (err) {
+        if (mounted) {
+          setScannerError(
+            err instanceof Error ? err.message : "Failed to list cameras",
+          );
+        }
+      }
+    };
+
+    loadCameras();
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedCameraId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const stopScanner = async () => {
+      if (!scannerRef.current) return;
+      try {
+        await scannerRef.current.stop();
+      } catch {
+        // ignore
+      }
+      try {
+        scannerRef.current.clear();
+      } catch {
+        // ignore
+      }
+    };
+
+    const startScanner = async () => {
+      if (startInProgressRef.current) return;
+      startInProgressRef.current = true;
+      setScannerError(null);
       try {
         if (typeof window !== "undefined") {
           const isLocalhost =
             window.location.hostname === "localhost" ||
             window.location.hostname === "127.0.0.1";
           if (!window.isSecureContext && !isLocalhost) {
-            if (mounted) {
-              setScannerError(
-                "Camera requires HTTPS on mobile browsers. Use HTTPS or localhost."
-              );
-              setScannerActive(false);
-            }
-            return;
-          }
-        }
-
-        if (!permissionChecked && navigator?.mediaDevices?.getUserMedia) {
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-              video: true,
-            });
-            stream.getTracks().forEach((track) => track.stop());
-            if (mounted) setPermissionChecked(true);
-          } catch (err) {
-            const message =
-              err instanceof Error ? err.message : "Camera permission denied";
-            if (mounted) {
-              setScannerError(
-                `${message}. Please allow camera access and use HTTPS on mobile.`
-              );
-              setScannerActive(false);
-            }
-            return;
-          }
-        }
-
-        const module = await import("html5-qrcode");
-        const Html5QrcodeCtor =
-          (module as any).Html5Qrcode ||
-          (module as any).default?.Html5Qrcode ||
-          (module as any).default;
-
-        if (!mounted) return;
-        if (!Html5QrcodeCtor) {
-          throw new Error("Html5Qrcode not available");
-        }
-
-        if (typeof Html5QrcodeCtor.getCameras === "function") {
-          const deviceList = await Html5QrcodeCtor.getCameras();
-          if (mounted) {
-            const normalized = (deviceList || []).map(
-              (d: any, idx: number) => ({
-                id: d.id || d.deviceId || `${idx}`,
-                label: d.label || `Camera ${idx + 1}`,
-              })
+            setScannerError(
+              "Camera requires HTTPS on mobile browsers. Use HTTPS or localhost.",
             );
-            setCameras(normalized);
-            if (!selectedCameraId && normalized.length > 0) {
-              setSelectedCameraId(normalized[0].id);
-            }
+            setScannerActive(false);
+            return;
           }
         }
 
-        const instance: Html5QrcodeType = new Html5QrcodeCtor("qr-reader");
-        qrRef.current = instance;
-        const qrbox =
-          typeof window !== "undefined"
-            ? Math.max(220, Math.min(320, Math.floor(window.innerWidth * 0.7)))
-            : 250;
-        await instance.start(
-          selectedCameraId ? selectedCameraId : { facingMode: "environment" },
-          { fps: 10, qrbox, aspectRatio: 1.0 },
-          async (decodedText: string) => {
+        if (!scannerRef.current) {
+          scannerRef.current = new Html5Qrcode("qr-reader");
+        } else {
+          await stopScanner();
+        }
+
+        const config = selectedCameraId
+          ? { deviceId: { exact: selectedCameraId } }
+          : { facingMode: "environment" };
+
+        await scannerRef.current.start(
+          config,
+          { fps: 8, qrbox: 240, aspectRatio: 1.0, disableFlip: true },
+          async (decodedText) => {
+            if (cancelled) return;
             setToken(decodedText);
-            setScannerActive(false);
             await runValidation(decodedText);
+            setScannerActive(false);
           },
-          (message: string) => {
-            if (mounted && message && message !== scannerError) {
-              setScannerError(message);
-            }
-          }
+          () => undefined,
         );
       } catch (err) {
-        setScannerError(
-          err instanceof Error ? err.message : "Failed to start scanner"
-        );
-        setScannerActive(false);
+        if (!cancelled) {
+          setScannerError(
+            err instanceof Error ? err.message : "Failed to start scanner",
+          );
+          setScannerActive(false);
+        }
+      } finally {
+        startInProgressRef.current = false;
       }
     };
 
-    init();
+    if (!scannerActive) {
+      stopScanner();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    startScanner();
 
     return () => {
-      mounted = false;
-      if (qrRef.current) {
-        qrRef.current
-          .stop()
-          .then(() => qrRef.current?.clear())
-          .catch(() => undefined)
-          .finally(() => {
-            qrRef.current = null;
-          });
-      }
+      cancelled = true;
+      stopScanner();
     };
-  }, [scannerActive, permissionChecked, selectedCameraId]);
+  }, [scannerActive, selectedCameraId]);
 
   return (
     <div className="mx-auto max-w-lg px-6 py-10">
@@ -199,8 +189,8 @@ export default function ValidatePage() {
         )}
         <div
           id="qr-reader"
-          className="overflow-hidden rounded-xl border border-white/10 bg-black/40"
-          style={{ minHeight: scannerActive ? 240 : 0 }}
+          className="w-full overflow-hidden rounded-xl border border-white/10 bg-black/40"
+          style={{ minHeight: 240 }}
         />
         {scannerError && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-100">
@@ -230,34 +220,21 @@ export default function ValidatePage() {
           {loading ? "Checking..." : "Validate"}
         </button>
         {validationResult && (
-          <div className="space-y-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white/80">
+          <div className="space-y-1 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white/80">
             <p className="text-xs uppercase tracking-[0.2em] text-white/50">
-              Validation result
+              Result
             </p>
             <p>Status: {validationResult.status || "unknown"}</p>
-            {validationResult.user && (
-              <div className="text-xs text-white/70">
-                <p>Name: {validationResult.user.name || "-"}</p>
-                <p>Phone: {validationResult.user.phone || "-"}</p>
-                <p>Email: {validationResult.user.email || "-"}</p>
-              </div>
-            )}
-            {validationResult.ticket?.id && (
-              <p className="text-xs text-white/60">
-                Ticket: {validationResult.ticket.id}
+            {validationResult.user?.name && (
+              <p className="text-xs text-white/70">
+                Attendee: {validationResult.user.name}
               </p>
             )}
-            {validationResult.tickets &&
-              validationResult.tickets.length > 0 && (
-                <p className="text-xs text-white/60">
-                  Tickets: {validationResult.tickets.length}
-                </p>
-              )}
-          </div>
-        )}
-        {result && (
-          <div className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white/80">
-            {result}
+            {validationResult.user?.phone && (
+              <p className="text-xs text-white/70">
+                Phone: {validationResult.user.phone}
+              </p>
+            )}
           </div>
         )}
       </form>
