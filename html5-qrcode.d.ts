@@ -5,7 +5,16 @@ declare module "html5-qrcode" {
       config: { facingMode?: string; deviceId?: { exact: string } },
       options: {
         fps?: number;
-        qrbox?: number | { width: number; height: number };
+        qrbox?:
+          | number
+          | { width: number; height: number }
+          | ((
+              viewfinderWidth: number,
+              viewfinderHeight: number,
+            ) => {
+              width: number;
+              height: number;
+            });
         aspectRatio?: number;
         disableFlip?: boolean;
       },

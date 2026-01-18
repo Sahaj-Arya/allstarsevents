@@ -127,23 +127,44 @@ export default function ValidatePage() {
           await stopScanner();
         }
 
+        const onScanSuccess = async (decodedText: string) => {
+          if (cancelled) return;
+          if (lastScanRef.current === decodedText) return;
+          lastScanRef.current = decodedText;
+          setToken(decodedText);
+          await runValidation(decodedText);
+          setScannerActive(false);
+        };
+
         const config = selectedCameraId
           ? { deviceId: { exact: selectedCameraId } }
           : { facingMode: "environment" };
 
-        await scannerRef.current.start(
-          config,
-          { fps: 8, qrbox: 240, aspectRatio: 1.0, disableFlip: true },
-          async (decodedText) => {
-            if (cancelled) return;
-            if (lastScanRef.current === decodedText) return;
-            lastScanRef.current = decodedText;
-            setToken(decodedText);
-            await runValidation(decodedText);
-            setScannerActive(false);
+        const scanConfig = {
+          fps: 8,
+          qrbox: (viewfinderWidth: number) => {
+            const size = Math.floor(viewfinderWidth * 0.75);
+            return { width: size, height: size };
           },
-          () => undefined,
-        );
+          aspectRatio: 4 / 3,
+          disableFlip: false,
+        };
+
+        try {
+          await scannerRef.current.start(
+            config,
+            scanConfig,
+            onScanSuccess,
+            () => undefined,
+          );
+        } catch {
+          await scannerRef.current.start(
+            { facingMode: "environment" },
+            scanConfig,
+            onScanSuccess,
+            () => undefined,
+          );
+        }
       } catch (err) {
         if (!cancelled) {
           setScannerError(
