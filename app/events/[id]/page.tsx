@@ -26,23 +26,38 @@ export default async function EventDetailsPage({
         : [];
 
   const hero = media[0] || event.photo || "";
+  const bgImage = (() => {
+    if (!isVideoUrl(hero)) return null;
+    const second = media[1] || event.photo || "";
+    return second && !isVideoUrl(second) ? second : null;
+  })();
   const venue = event.venue || event.placename || event.location;
   const category = event.category || event.type;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#050506] text-white">
       <div className="pointer-events-none absolute inset-0 z-0">
-        <video
-          className="h-full w-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          aria-hidden="true"
-        >
-          <source src="/assets/IMG_0311.MP4" type="video/mp4" />
-        </video>
+        {bgImage ? (
+          <Image
+            src={bgImage}
+            alt={event.title || "background"}
+            fill
+            className="h-full w-full object-cover"
+            priority={false}
+          />
+        ) : (
+          <video
+            className="h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+          >
+            <source src="/assets/IMG_0311.MP4" type="video/mp4" />
+          </video>
+        )}
         <div className="absolute inset-0 bg-black/70" />
       </div>
       <section className="relative z-10 mx-auto max-w-6xl px-5 pb-14 pt-8">
@@ -72,9 +87,15 @@ export default async function EventDetailsPage({
                 {hero ? (
                   isVideoUrl(hero) ? (
                     <video
-                      controls
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
                       className="h-full w-full object-cover"
                       poster={event.photo || undefined}
+                      preload="auto"
+                      aria-hidden="true"
+                      tabIndex={-1}
                     >
                       <source src={hero} />
                     </video>
