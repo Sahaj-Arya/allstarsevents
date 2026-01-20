@@ -21,6 +21,7 @@ import {
 } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
 import { fireAlert } from "../../lib/alerts";
+import Head from "next/head";
 
 export default function ProfilePage() {
   const { bookings, replaceBookings } = useCart();
@@ -45,7 +46,7 @@ export default function ProfilePage() {
       const tickets = await fetchTickets(token, phoneNumber);
       replaceBookings(tickets);
     },
-    [replaceBookings]
+    [replaceBookings],
   );
 
   useEffect(() => {
@@ -92,7 +93,7 @@ export default function ProfilePage() {
       phone,
       otp || STATIC_OTP,
       otpRequestId || "bypass",
-      { name, email }
+      { name, email },
     );
     setOtpLoading(false);
     if (!verified.ok) {
@@ -114,7 +115,7 @@ export default function ProfilePage() {
     setOtpStatus(mode === "signup" ? "Signed up via OTP" : "Logged in via OTP");
     fireAlert(
       "success",
-      mode === "signup" ? "User signed up" : "User logged in"
+      mode === "signup" ? "User signed up" : "User logged in",
     );
     setEditingDetails(needs);
     await syncTickets(verified.token, phone);
@@ -350,11 +351,24 @@ export default function ProfilePage() {
 
               {!editingDetails && !needsDetails && (
                 <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-white/80">
-                  <p className="font-semibold text-white">{profile?.name}</p>
-                  <p className="text-white/70">
-                    {profile?.email || "No email"}
-                  </p>
-                  <p className="text-white/70">{profile?.phone}</p>
+                  <div className="mb-2">
+                    <span className="block font-semibold text-white">
+                      Name:
+                    </span>
+                    <span>{profile?.name}</span>
+                  </div>
+                  <div className="mb-2">
+                    <span className="block font-semibold text-white">
+                      Email:
+                    </span>
+                    <span>{profile?.email || "No email"}</span>
+                  </div>
+                  <div className="mb-2">
+                    <span className="block font-semibold text-white">
+                      Phone:
+                    </span>
+                    <span>{profile?.phone}</span>
+                  </div>
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                     <Button
                       variant="secondary"

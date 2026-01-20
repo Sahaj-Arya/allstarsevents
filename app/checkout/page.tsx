@@ -24,6 +24,7 @@ function CheckoutContent() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [modalName, setModalName] = useState(profile?.name || "");
   const [modalEmail, setModalEmail] = useState(profile?.email || "");
+  const [showNameEmail, setShowNameEmail] = useState(false);
   const [modalPhone, setModalPhone] = useState(profile?.phone || "");
   const [otp, setOtp] = useState("");
   const [otpRequestId, setOtpRequestId] = useState<string | null>(null);
@@ -119,10 +120,21 @@ function CheckoutContent() {
       modalPhone,
       otp || STATIC_OTP,
       requestIdToUse,
-      { name: modalName, email: modalEmail }
+      showNameEmail ? { name: modalName, email: modalEmail } : undefined,
     );
     setOtpLoading(false);
     if (!verified.ok) {
+      // If error indicates user does not exist, show name/email fields
+      if (
+        verified.error === "USER_NOT_FOUND" ||
+        (verified.error && verified.error.toLowerCase().includes("not found"))
+      ) {
+        setShowNameEmail(true);
+        setError(
+          "User not found. Please enter your name and email to continue.",
+        );
+        return;
+      }
       setError("OTP verification failed");
       return;
     }
@@ -278,20 +290,6 @@ function CheckoutContent() {
             </p>
             <form onSubmit={handleAuthSubmit} className="mt-4 space-y-3">
               <InputField
-                label="Name"
-                required
-                requiredMark
-                value={modalName}
-                onChange={(e) => setModalName(e.target.value)}
-              />
-              <InputField
-                label="Email"
-                type="email"
-                value={modalEmail}
-                onChange={(e) => setModalEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
-              <InputField
                 value={modalPhone}
                 label="Phone"
                 required
@@ -306,6 +304,24 @@ function CheckoutContent() {
                   setModalPhone(val);
                 }}
               />
+              {showNameEmail && (
+                <>
+                  <InputField
+                    label="Name"
+                    required
+                    requiredMark
+                    value={modalName}
+                    onChange={(e) => setModalName(e.target.value)}
+                  />
+                  <InputField
+                    label="Email"
+                    type="email"
+                    value={modalEmail}
+                    onChange={(e) => setModalEmail(e.target.value)}
+                    placeholder="you@example.com"
+                  />
+                </>
+              )}
               <div className="flex gap-2">
                 <Button
                   type="button"

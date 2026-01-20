@@ -15,10 +15,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "All Stars Dance Events",
-  description:
-    "Book dance events and classes with mock + Razorpay ready checkout",
+// export const metadata: Metadata = {
+//   title: "AllStars Studio",
+//   description: "Welcome to Donny's",
+// };
+
+export const metadata = {
+  title: "Allstars Studio",
+  description: "Welcome to Donny's",
+
+  openGraph: {
+    title: "Allstars Studio",
+    images: ["../../public/favicon.png"],
+  },
 };
 
 export default function RootLayout({

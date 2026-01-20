@@ -62,7 +62,7 @@ export default async function EventDetailsPage({
           </span>
         </div>
 
-        <div className="mt-6 grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="mt-6 grid gap-8">
           <div className="space-y-8">
             <div
               className="overflow-hidden rounded-[32px] border border-white/20 bg-black/40 shadow-2xl backdrop-blur-md"
@@ -208,60 +208,6 @@ export default async function EventDetailsPage({
               </div>
             ) : null}
           </div>
-
-          <aside className="space-y-4">
-            <div
-              className="rounded-[28px] border border-white/20 bg-black/40 p-6 shadow-xl backdrop-blur-md"
-              style={{ boxShadow: "0 4px 16px 0 rgba(0,0,0,0.37)" }}
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-xs uppercase tracking-[0.2em] text-white/60">
-                  Tickets
-                </p>
-                <span className="rounded-full border border-white/15 px-3 py-1 text-[10px] font-semibold text-white/70">
-                  Starting at
-                </span>
-              </div>
-              <div className="mt-4 flex items-end justify-between">
-                <div>
-                  <p className="text-3xl font-semibold">₹{event.price}</p>
-                  <p className="text-xs text-white/60">Inclusive of taxes</p>
-                </div>
-                <span className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/70">
-                  {category}
-                </span>
-              </div>
-              <div className="mt-6 space-y-3 text-sm text-white/70">
-                <div className="flex items-center justify-between">
-                  <span>Venue</span>
-                  <span className="text-white">{venue}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Date</span>
-                  <span className="text-white">{event.date}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Time</span>
-                  <span className="text-white">{event.time}</span>
-                </div>
-              </div>
-              <div className="mt-6">
-                <EventDetailsActions event={event} />
-              </div>
-            </div>
-
-            <div
-              className="rounded-3xl border border-white/20 bg-black/60 p-6 backdrop-blur-md"
-              style={{ boxShadow: "0 4px 16px 0 rgba(0,0,0,0.37)" }}
-            >
-              <h3 className="text-lg font-semibold">Why attend</h3>
-              <ul className="mt-3 space-y-2 text-sm text-white/70">
-                <li>Curated lineup and premium production.</li>
-                <li>Community-first experience with VIP access.</li>
-                <li>Seamless entry with digital tickets.</li>
-              </ul>
-            </div>
-          </aside>
         </div>
       </section>
       {/* Floating Book Now Button */}
