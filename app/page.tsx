@@ -9,8 +9,22 @@ export default async function Home() {
   const events = await fetchEvents();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-neutral-900 text-white">
-      <section className="mx-auto max-w-6xl px-6 py-10">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-black via-slate-900 to-neutral-900 text-white">
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <video
+          className="h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          aria-hidden="true"
+        >
+          <source src="/assets/IMG_0311.MP4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-black/70" />
+      </div>
+      <section className="relative z-10 mx-auto max-w-6xl px-6 py-10">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.25em] text-white/60">
