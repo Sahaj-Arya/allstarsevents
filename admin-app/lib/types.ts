@@ -12,6 +12,7 @@ export type EventItem = {
   title: string;
   description: string;
   price: number;
+  original_price?: number;
   photo: string;
   images?: string[];
   media?: string[];

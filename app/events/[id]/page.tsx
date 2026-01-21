@@ -33,6 +33,9 @@ export default async function EventDetailsPage({
   })();
   const venue = event.venue || event.placename || event.location;
   const category = event.category || event.type;
+  const originalPrice = event.original_price;
+  const hasDiscount =
+    typeof originalPrice === "number" && originalPrice > event.price;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#050506] text-white">
@@ -239,14 +242,22 @@ export default async function EventDetailsPage({
       {/* Floating Book Now Button */}
       <div className="fixed bottom-0 left-0 right-0 z-50 flex w-full items-center justify-center px-4 pb-4 pointer-events-none">
         <div
-          className="pointer-events-auto mx-auto flex max-w-md flex-1 items-center justify-between gap-4 rounded-2xl border border-white/20 bg-black/80 px-6 py-4 shadow-2xl backdrop-blur-md"
+          className="pointer-events-auto mx-auto flex max-w-md flex-1 flex-nowrap items-center justify-between gap-4 rounded-2xl border border-white/20 bg-black/80 px-6 py-4 shadow-2xl backdrop-blur-md"
           style={{ boxShadow: "0 8px 32px 0 rgba(0,0,0,0.37)" }}
         >
-          <span className="text-lg font-bold text-white">₹{event.price}</span>
+          <div className="flex flex-col items-center gap-0 text-white">
+            {hasDiscount && (
+              <span className="text-white/60 line-through text-sm">
+                ₹{originalPrice}
+              </span>
+            )}
+            <span className="text-lg mt-[-4] font-bold">₹{event.price}</span>
+          </div>
           <EventDetailsActions
             event={event}
             buttonLabel="Book Now"
             className="!px-8 !py-3 !rounded-full !text-base !font-semibold !bg-rose-600 hover:!bg-rose-500"
+            hideQuantity
           />
         </div>
       </div>

@@ -8,6 +8,9 @@ import { FaMapMarkerAlt } from "react-icons/fa";
 export function EventCard({ event }: { event: EventItem }) {
   const primaryImage = event.photo || event.images?.[0] || "";
   const eventSlug = event.id || event._id || "";
+  const originalPrice = event.original_price;
+  const hasDiscount =
+    typeof originalPrice === "number" && originalPrice > event.price;
 
   const bg =
     primaryImage && primaryImage.startsWith("http")
@@ -42,7 +45,14 @@ export function EventCard({ event }: { event: EventItem }) {
           <div className="absolute inset-0" style={{ background: bg }} />
         )}
         <div className="absolute bottom-3 left-3 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">
-          ₹ {event.price}
+          <div className="flex items-center gap-2">
+            {hasDiscount && (
+              <span className="text-white/60 line-through">
+                ₹ {originalPrice}
+              </span>
+            )}
+            <span>₹ {event.price}</span>
+          </div>
         </div>
         {/* <button
           className="absolute top-3 right-3 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 shadow"

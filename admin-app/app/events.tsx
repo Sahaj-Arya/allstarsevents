@@ -29,6 +29,7 @@ export default function AdminEventsScreen() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [originalPrice, setOriginalPrice] = useState("");
   const [photo, setPhoto] = useState("");
   const [images, setImages] = useState("");
   const [media, setMedia] = useState("");
@@ -71,6 +72,8 @@ export default function AdminEventsScreen() {
         title,
         description,
         price: Number(price),
+        original_price:
+          originalPrice.trim().length > 0 ? Number(originalPrice) : undefined,
         photo,
         images: toList(images),
         media: toList(media),
@@ -293,6 +296,17 @@ export default function AdminEventsScreen() {
                 value={price}
                 onChangeText={setPrice}
                 placeholder="1200"
+                placeholderTextColor="#666"
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.field}>
+              <Text style={styles.label}>Original price</Text>
+              <TextInput
+                style={styles.input}
+                value={originalPrice}
+                onChangeText={setOriginalPrice}
+                placeholder="1999"
                 placeholderTextColor="#666"
                 keyboardType="numeric"
               />

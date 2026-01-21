@@ -17,6 +17,7 @@ export default function AdminEventsPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [originalPrice, setOriginalPrice] = useState("");
   const [photo, setPhoto] = useState("");
   const [images, setImages] = useState("");
   const [media, setMedia] = useState("");
@@ -62,6 +63,8 @@ export default function AdminEventsPage() {
         title,
         description,
         price: Number(price),
+        original_price:
+          originalPrice.trim().length > 0 ? Number(originalPrice) : undefined,
         photo,
         images: toList(images),
         media: toList(media),
@@ -273,7 +276,7 @@ export default function AdminEventsPage() {
           />
         </label>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <label className="space-y-2">
             <span className="text-sm font-semibold text-white">Price</span>
             <input
@@ -282,6 +285,18 @@ export default function AdminEventsPage() {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               required
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-white">
+              Original price
+            </span>
+            <input
+              type="number"
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+              value={originalPrice}
+              onChange={(e) => setOriginalPrice(e.target.value)}
+              placeholder="e.g. 1999"
             />
           </label>
           <label className="space-y-2">
@@ -420,8 +435,8 @@ export default function AdminEventsPage() {
           {loading
             ? "Saving..."
             : mode === "create"
-            ? "Create event"
-            : "Update event"}
+              ? "Create event"
+              : "Update event"}
         </button>
 
         {(error || parsedAbout.error) && (

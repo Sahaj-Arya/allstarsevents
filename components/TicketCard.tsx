@@ -43,6 +43,9 @@ export function TicketItemCard({
 }) {
   const item = booking.cartItems[itemIndex];
   if (!item) return null;
+  const originalPrice = item.event.original_price;
+  const hasDiscount =
+    typeof originalPrice === "number" && originalPrice > item.event.price;
 
   return (
     <TicketShell className="shrink-0 w-[260px] min-w-[260px] max-w-[320px] sm:w-[300px]">
@@ -58,7 +61,14 @@ export function TicketItemCard({
         </p>
         <div className="flex items-center justify-between text-sm text-white/80 w-full">
           <span>Qty: {item.quantity}</span>
-          <span>₹{item.event.price} each</span>
+          <span className="flex items-center gap-2">
+            {hasDiscount && (
+              <span className="text-white/50 line-through">
+                ₹{originalPrice}
+              </span>
+            )}
+            <span>₹{item.event.price} each</span>
+          </span>
         </div>
         <p className="text-xs text-white/50 w-full text-right">
           Booking: ₹{booking.amount}

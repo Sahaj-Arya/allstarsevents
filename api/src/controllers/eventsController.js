@@ -59,6 +59,7 @@ export async function createEvent(req, res) {
       title,
       description,
       price,
+      original_price,
       photo,
       images,
       media,
@@ -82,6 +83,10 @@ export async function createEvent(req, res) {
       title,
       description: description || "",
       price: Number(price),
+      original_price:
+        original_price !== undefined && original_price !== null
+          ? Number(original_price)
+          : null,
       photo: photo || "",
       images: toArray(images),
       media: toArray(media),
@@ -114,6 +119,10 @@ export async function updateEvent(req, res) {
     const payload = {
       ...update,
       price: update.price !== undefined ? Number(update.price) : undefined,
+      original_price:
+        update.original_price !== undefined
+          ? Number(update.original_price)
+          : undefined,
       images: update.images !== undefined ? toArray(update.images) : undefined,
       media: update.media !== undefined ? toArray(update.media) : undefined,
       about:

@@ -5,6 +5,10 @@ import { useCart } from "../lib/cart-context";
 
 export function CartItemRow({ item }: { item: Item }) {
   const { updateQuantity, removeItem } = useCart();
+  const originalPrice = item.event.original_price;
+  const hasDiscount =
+    typeof originalPrice === "number" && originalPrice > item.event.price;
+  const originalTotal = hasDiscount ? originalPrice * item.quantity : null;
 
   return (
     <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4 shadow-sm backdrop-blur">
@@ -33,9 +37,14 @@ export function CartItemRow({ item }: { item: Item }) {
             +
           </button>
         </div>
-        <p className="w-20 text-right text-white">
-          ₹{item.event.price * item.quantity}
-        </p>
+        <div className="w-24 text-right">
+          {hasDiscount && originalTotal !== null && (
+            <div className="text-xs text-white/50 line-through">
+              ₹{originalTotal}
+            </div>
+          )}
+          <div className="text-white">₹{item.event.price * item.quantity}</div>
+        </div>
         <button
           className="text-xs font-semibold text-rose-400 hover:text-rose-300"
           onClick={() => removeItem(item.event.id)}

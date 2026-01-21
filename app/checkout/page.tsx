@@ -56,6 +56,11 @@ function CheckoutContent() {
     return event.price * quantity;
   }, [event, quantity]);
 
+  const originalPrice = event?.original_price;
+  const hasDiscount =
+    typeof originalPrice === "number" && !!event && originalPrice > event.price;
+  const originalTotal = hasDiscount ? originalPrice * quantity : null;
+
   useEffect(() => {
     const eventId = searchParams.get("eventId");
     const qty = Number(searchParams.get("qty"));
@@ -258,13 +263,23 @@ function CheckoutContent() {
             <div className="flex items-center justify-between text-sm text-white/70">
               <div>
                 <p className="font-semibold text-white">{event.title}</p>
-                <p className="text-white/50">
-                  {quantity} x ₹{event.price}
-                </p>
+                <div className="flex items-center gap-2 text-white/50">
+                  {hasDiscount && (
+                    <span className="line-through">₹{originalPrice}</span>
+                  )}
+                  <span>
+                    {quantity} x ₹{event.price}
+                  </span>
+                </div>
               </div>
-              <p className="font-semibold text-white">
-                ₹{event.price * quantity}
-              </p>
+              <div className="text-right">
+                {hasDiscount && originalTotal !== null && (
+                  <div className="text-xs text-white/50 line-through">
+                    ₹{originalTotal}
+                  </div>
+                )}
+                <p className="font-semibold text-white">₹{total}</p>
+              </div>
             </div>
           )}
           <div className="flex items-center justify-between border-t border-dashed border-white/15 pt-4 text-sm font-semibold text-white">

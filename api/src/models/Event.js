@@ -6,6 +6,7 @@ const eventSchema = new mongoose.Schema(
     title: { type: String, required: true },
     description: { type: String, default: "" },
     price: { type: Number, required: true },
+    original_price: { type: Number, default: null },
     photo: { type: String, default: "" },
     images: { type: [String], default: [] },
     media: { type: [String], default: [] },
@@ -28,7 +29,7 @@ const eventSchema = new mongoose.Schema(
     type: { type: String, enum: ["event", "class"], default: "event" },
     isActive: { type: Boolean, default: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const Event = mongoose.model("Event", eventSchema);
