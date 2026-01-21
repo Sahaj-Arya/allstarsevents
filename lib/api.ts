@@ -86,7 +86,7 @@ export async function fetchEventById(id: string): Promise<EventItem | null> {
 }
 
 export async function fetchShareableTicket(
-  token: string
+  token: string,
 ): Promise<{ booking: Booking; focusTicketId: string | null } | null> {
   try {
     const res = await fetch(`${API_BASE_URL}/tickets/share/${token}`, {
@@ -130,7 +130,7 @@ export async function uploadImage(file: File): Promise<{
   });
 
   if (!res.ok) {
-    const data = await res.json().catch(() => ({} as { error?: string }));
+    const data = await res.json().catch(() => ({}) as { error?: string });
     const message =
       res.status === 413
         ? "File too large"
@@ -175,7 +175,7 @@ export async function createEvent(payload: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  const data = await res.json().catch(() => ({} as { error?: string }));
+  const data = await res.json().catch(() => ({}) as { error?: string });
   if (!res.ok) {
     const message = data?.error || "Failed to create event";
     fireAlert("error", message);
@@ -187,14 +187,14 @@ export async function createEvent(payload: {
 
 export async function updateEvent(
   id: string,
-  payload: Partial<EventItem>
+  payload: Partial<EventItem>,
 ): Promise<EventItem> {
   const res = await fetch(`${API_BASE_URL}/events/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  const data = await res.json().catch(() => ({} as { error?: string }));
+  const data = await res.json().catch(() => ({}) as { error?: string });
   if (!res.ok) {
     const message = data?.error || "Failed to update event";
     fireAlert("error", message);
@@ -205,11 +205,11 @@ export async function updateEvent(
 }
 
 export async function fetchTicketsByPhoneAdmin(
-  phone: string
+  phone: string,
 ): Promise<Booking[]> {
   if (!phone) return [];
   const res = await fetch(
-    `${API_BASE_URL}/tickets/search?phone=${encodeURIComponent(phone)}`
+    `${API_BASE_URL}/tickets/search?phone=${encodeURIComponent(phone)}`,
   );
   if (!res.ok) {
     fireAlert("error", "Failed to fetch tickets");
@@ -226,7 +226,7 @@ export async function fetchTicketByTokenAdmin(token: string): Promise<{
 }> {
   if (!token) return { booking: null, focusTicketId: null };
   const res = await fetch(
-    `${API_BASE_URL}/tickets/search?token=${encodeURIComponent(token)}`
+    `${API_BASE_URL}/tickets/search?token=${encodeURIComponent(token)}`,
   );
   if (!res.ok) {
     fireAlert("error", "Failed to fetch ticket");
@@ -245,7 +245,7 @@ export async function fetchTicketByTokenAdmin(token: string): Promise<{
 
 export async function fetchAllTicketsAdmin(
   page = 1,
-  limit = 200
+  limit = 200,
 ): Promise<{
   tickets: AdminTicketListItem[];
   total: number;
@@ -253,7 +253,7 @@ export async function fetchAllTicketsAdmin(
   limit: number;
 }> {
   const res = await fetch(
-    `${API_BASE_URL}/tickets/list?page=${page}&limit=${limit}`
+    `${API_BASE_URL}/tickets/list?page=${page}&limit=${limit}`,
   );
   if (!res.ok) {
     fireAlert("error", "Failed to fetch tickets list");
@@ -316,7 +316,7 @@ function mapBookingFromApi(api: ApiBooking): Booking {
         isScanned: Boolean(t.isScanned),
         scannedAt: t.scannedAt,
         createdAt: t.createdAt,
-      })
+      }),
     ),
     amount: api.amount ?? 0,
     paymentMode: api.paymentMode || PAYMENT_MODE,
@@ -335,7 +335,7 @@ export async function createPaymentOrder(
   amount: number,
   profile: UserProfile,
   cartItems: CartItem[],
-  paymentMode: PaymentMode
+  paymentMode: PaymentMode,
 ) {
   const res = await fetch(`${API_BASE_URL}/payment/create-order`, {
     method: "POST",
@@ -425,7 +425,7 @@ export async function verifyPayment(params: {
         seat: t.seat,
         isScanned: Boolean(t.isScanned),
         createdAt: t.createdAt,
-      })
+      }),
     );
   }
   return booking;
@@ -433,7 +433,7 @@ export async function verifyPayment(params: {
 
 export async function fetchTickets(
   token?: string,
-  phone?: string
+  phone?: string,
 ): Promise<Booking[]> {
   if (!token && !phone) return [];
   const url = token
@@ -451,7 +451,7 @@ export async function fetchTickets(
 
 export async function updateProfileApi(
   token: string,
-  update: { name?: string; email?: string }
+  update: { name?: string; email?: string },
 ) {
   const res = await fetch(`${API_BASE_URL}/auth/profile`, {
     method: "PUT",
@@ -515,7 +515,7 @@ export async function validateTicket(ticketToken: string) {
     data?.ticket?.isScanned === true;
   fireAlert(
     alreadyScanned ? "info" : "success",
-    alreadyScanned ? "Ticket already scanned" : "Ticket scanned"
+    alreadyScanned ? "Ticket already scanned" : "Ticket scanned",
   );
   return data;
 }
@@ -524,7 +524,7 @@ export async function fetchUserByPhone(phone: string) {
   if (!phone) return { user: null, error: "phone required", status: 400 };
   try {
     const res = await fetch(
-      `${API_BASE_URL}/auth/user-by-phone?phone=${encodeURIComponent(phone)}`
+      `${API_BASE_URL}/auth/user-by-phone?phone=${encodeURIComponent(phone)}`,
     );
     const data = await res.json();
     if (!res.ok) {
@@ -535,7 +535,7 @@ export async function fetchUserByPhone(phone: string) {
         status: res.status,
       };
     }
-    fireAlert("success", "User fetched");
+    // fireAlert("success", "User fetched");
     return { user: data.user || null, error: null, status: res.status };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Network error";

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import ALL_STARS_LOGO from "../app/assets/allstars_studio.png";
+import ALL_STARS_LOGO from "../public/assets/allstars_studio.png";
 
 export function Header() {
   return (

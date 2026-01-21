@@ -54,6 +54,7 @@ export function EventCard({ event }: { event: EventItem }) {
             style={{ borderRadius: "1.5rem 0 0 1.5rem" }}
             sizes="(max-width: 768px) 100vw, 320px"
             priority
+            quality={60}
           />
         ) : (
           <div className="absolute inset-0" style={{ background: bg }} />

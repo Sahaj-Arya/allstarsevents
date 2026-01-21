@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
+import { GlobalLoader } from "../components/GlobalLoader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,7 +27,7 @@ export const metadata = {
 
   openGraph: {
     title: "AllStars Studio",
-    images: ["../../public/favicon.png"],
+    images: ["../public/allstars_studio.png"],
   },
 };
 
@@ -42,6 +43,7 @@ export default function RootLayout({
       >
         <Providers>
           <Header />
+          <GlobalLoader />
           <main className="flex-1 bg-gradient-to-b from-neutral-950 via-slate-950 to-black">
             {children}
           </main>
