@@ -26,7 +26,12 @@ export async function sendOtp(phone: string): Promise<string | null> {
   }
 }
 
-type VerifyResult = { ok: boolean; token?: string; user?: { _id?: string } };
+type VerifyResult = {
+  ok: boolean;
+  token?: string;
+  user?: { _id?: string };
+  error?: string;
+};
 
 export async function verifyOtp(
   phone: string,
@@ -40,15 +45,20 @@ export async function verifyOtp(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone, otp, requestId, ...extra }),
     });
-    if (!res.ok) return { ok: false };
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { ok: false, error: data?.error || "Request failed" };
+    }
     const data = await res.json();
     return {
       ok: Boolean(data.token || data.verified || data.ok),
       token: data.token,
       user: data.user,
+      error: data?.error,
     };
   } catch (err) {
     console.warn("verifyOtp failed", err);
-    return { ok: false };
+    const message = err instanceof Error ? err.message : "verifyOtp failed";
+    return { ok: false, error: message };
   }
 }
