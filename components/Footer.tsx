@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FaInstagram, FaFacebook, FaEnvelope, FaPhone } from "react-icons/fa";
 
 export function Footer() {
@@ -24,24 +25,43 @@ export function Footer() {
     },
   ];
 
+  const siteLinks = [
+    { label: "Terms & Conditions", href: "/terms" },
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Cancellation & Refund", href: "/cancellation-refund" },
+  ];
+
   return (
-    <footer className="border-t border-white/10 bg-black/40 text-xs text-white/70 py-2 w-full">
-      <div className="flex flex-col items-center gap-1">
-        <div className="flex gap-4 mb-1">
-          {contactItems.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={item.label}
-              className="hover:text-white text-lg"
-            >
-              {item.icon}
-            </a>
-          ))}
+    <footer className="border-t border-white/10 bg-black/40 text-xs text-white/70 py-4 w-full">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex gap-4 text-lg">
+            {contactItems.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={item.label}
+                className="hover:text-white"
+              >
+                {item.icon}
+              </a>
+            ))}
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3 text-sm">
+            {siteLinks.map((l) => (
+              <Link key={l.href} href={l.href} className="hover:text-white/90">
+                {l.label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="text-sm text-white/70 mt-1">
+            <span>© {new Date().getFullYear()} All Stars Studios</span>
+          </div>
         </div>
-        <span>© {new Date().getFullYear()} All Stars Studios</span>
       </div>
     </footer>
   );
