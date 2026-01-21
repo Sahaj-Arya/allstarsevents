@@ -59,7 +59,7 @@ export function Footer() {
           </div>
 
           <div className="text-sm text-white/70 mt-1">
-            <span>© {new Date().getFullYear()} All Stars Studios</span>
+            <span>© {new Date().getFullYear()} AllStars Studios</span>
           </div>
         </div>
       </div>

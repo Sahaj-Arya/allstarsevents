@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import QRCode from "react-qr-code";
 import { Booking } from "../lib/types";
-import { FaShareAlt } from "react-icons/fa";
+import { FaShareAlt, FaMapMarkerAlt } from "react-icons/fa";
 import Link from "next/link";
 
 function TicketShell({
@@ -159,7 +159,10 @@ export function TicketInstanceCard({
           target="_blank"
           rel="noopener noreferrer"
         >
-          <p className="mt-0 text-lg font-semibold">{ticket?.venue || ""}</p>
+          <p className="mt-0 text-lg font-semibold flex items-center gap-2">
+            <FaMapMarkerAlt className="text-white/80" />
+            <span>{ticket?.venue || ""}</span>
+          </p>
         </Link>
       </div>
       {ticket.seat && (
