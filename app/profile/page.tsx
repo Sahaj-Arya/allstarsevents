@@ -193,21 +193,21 @@ export default function ProfilePage() {
   }, [isAuthed, profile?.phone]);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8 sm:py-10">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl sm:text-3xl font-semibold text-white">
+    <div className="relative min-h-screen overflow-hidden bg-[#050506] text-white mx-auto max-w-4xl px-4 py-4">
+      <div className="flex flex-row gap-3 justify-between">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-white self-center">
           Profile
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center">
           {isAuthed && (
-            <Button variant="secondary" onClick={handleLogout}>
+            <Button className="h-10" variant="secondary" onClick={handleLogout}>
               Logout
             </Button>
           )}
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <div className="relative z-10 w-full py-4">
         <Card>
           {!isAuthed && (
             <>
@@ -339,11 +339,11 @@ export default function ProfilePage() {
           )}
 
           {isAuthed && (
-            <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/50">
+            <div className="relative z-10 w-full py-2">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/50 pb-4">
                 Profile
               </p>
-              <p className="text-sm text-white/70">
+              <p className="text-sm text-white/70 pb-4">
                 You are signed in. Review or complete your details below.
               </p>
 
@@ -435,7 +435,7 @@ export default function ProfilePage() {
           )}
         </Card>
 
-        <Card className="w-[380] md:w-full">
+        <Card className="relative z-10 w-full py-4">
           <p className="text-sm font-semibold text-white">Tickets</p>
           {!isAuthed && (
             <p className="mt-2 text-sm text-white/60">
@@ -458,28 +458,37 @@ export default function ProfilePage() {
                         Booking ·{" "}
                         {booking.cartItems[0]?.event.title || "Tickets"}
                       </p>
-                      <p className="text-xs text-white/50">
+                      <p className="text-xs text-white/50 pt-1">
                         Paid ₹{booking.amount} · {booking.paymentMode}
                         {booking.createdAt
                           ? ` · ${new Date(booking.createdAt).toLocaleString()}`
                           : ""}
                       </p>
+
+                      <p className="text-xs text-white/50 pt-1">
+                        Booked for:{" "}
+                        {booking.cartItems.reduce(
+                          (sum, item) => sum + item.quantity,
+                          0,
+                        )}{" "}
+                        ticket
+                        {booking.cartItems.reduce(
+                          (sum, item) => sum + item.quantity,
+                          0,
+                        ) > 1
+                          ? "s"
+                          : ""}
+                      </p>
                     </div>
-                    <Link
-                      href={`/ticket/${booking.ticketToken}`}
-                      className="text-xs font-semibold text-white/70 underline decoration-white/30 hover:text-white"
-                    >
-                      View QR
-                    </Link>
                   </div>
 
                   <div className="mt-3 -mx-3 overflow-x-auto px-3">
                     <div className="flex flex-nowrap gap-3 pb-2 sm:flex-wrap sm:overflow-visible">
-                      {booking.tickets && booking.tickets.length > 0
-                        ? booking.tickets.map((t) => (
+                      {booking?.tickets && booking?.tickets?.length > 0
+                        ? booking?.tickets?.map((t) => (
                             <TicketInstanceCard key={t.id} ticket={t} />
                           ))
-                        : booking.cartItems.map((_, idx) => (
+                        : booking?.cartItems?.map((_, idx) => (
                             <TicketItemCard
                               key={`${booking.ticketToken}-${idx}`}
                               booking={booking}

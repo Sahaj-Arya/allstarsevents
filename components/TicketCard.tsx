@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import QRCode from "react-qr-code";
 import { Booking } from "../lib/types";
 import { FaShareAlt } from "react-icons/fa";
+import Link from "next/link";
 
 function TicketShell({
   children,
@@ -144,9 +145,19 @@ export function TicketInstanceCard({
         {ticket.date || ""}
         {ticket.time ? ` · ${ticket.time}` : ""}
       </p>
-      <p className="text-sm text-white/70 break-words text-center">
-        {ticket.location || ""}
-      </p>
+      <div
+        className="rounded-2xl pt-6"
+        style={{ boxShadow: "0 4px 16px 0 rgba(0,0,0,0)" }}
+      >
+        <p className="text-xs uppercase tracking-[0.2em] text-white/50">AT</p>
+        <Link
+          href={ticket?.location || ""}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <p className="mt-2 text-lg font-semibold">{ticket?.venue || ""}</p>
+        </Link>
+      </div>
       {ticket.seat && (
         <p className="text-sm text-white/80">Seat: {ticket.seat}</p>
       )}
@@ -196,6 +207,21 @@ export function TicketCard({ booking }: { booking: Booking }) {
       <p className="text-sm text-white/70 text-center">
         {firstItem?.event.date} · {firstItem?.event.time}
       </p>
+      <div
+        className="rounded-2xl pt-6"
+        style={{ boxShadow: "0 4px 16px 0 rgba(0,0,0,0)" }}
+      >
+        <p className="text-xs uppercase tracking-[0.2em] text-white/50">AT</p>
+        <Link
+          href={firstItem?.event?.location}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <p className="mt-2 text-lg font-semibold">
+            {firstItem?.event?.venue}
+          </p>
+        </Link>
+      </div>
       <p className="text-sm text-white/70 text-center">
         {firstItem?.event.location}
       </p>
