@@ -39,7 +39,6 @@ export default function ProfilePage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
 
   const isAuthed = Boolean(profile);
-  const needsDetails = isAuthed && (!profile?.name || !profile?.email);
 
   const syncTickets = useCallback(
     async (token?: string, phoneNumber?: string) => {
@@ -111,13 +110,12 @@ export default function ProfilePage() {
     setProfile(newProfile);
     setName(newProfile.name);
     setEmail(newProfile.email);
-    const needs = !(newProfile.name && newProfile.email);
     setOtpStatus(mode === "signup" ? "Signed up via OTP" : "Logged in via OTP");
     fireAlert(
       "success",
       mode === "signup" ? "User signed up" : "User logged in",
     );
-    setEditingDetails(needs);
+    setEditingDetails(false);
     await syncTickets(verified.token, phone);
   };
 
@@ -169,6 +167,13 @@ export default function ProfilePage() {
         if (user) {
           setName(user.name || "");
           setEmail(user.email || "");
+          if (profile) {
+            setProfile({
+              ...profile,
+              name: user.name || profile.name || "Guest",
+              email: user.email || profile.email || "",
+            });
+          }
         } else {
           setName("");
           setEmail("");
@@ -185,6 +190,13 @@ export default function ProfilePage() {
         if (user) {
           setName(user.name || "");
           setEmail(user.email || "");
+          if (profile) {
+            setProfile({
+              ...profile,
+              name: user.name || profile.name || "Guest",
+              email: user.email || profile.email || "",
+            });
+          }
         } else if (error) {
           setError(error + (status ? ` (code ${status})` : ""));
         }
@@ -232,12 +244,13 @@ export default function ProfilePage() {
               </p>
 
               {error && (
-                <Alert tone="error" className="mt-3">
+                <Alert tone="error" className="mt-3 mb-3">
                   {error}
                 </Alert>
               )}
+
               {otpStatus && (
-                <Alert tone="info" className="mt-3">
+                <Alert tone="info" className="mt-3 mb-3">
                   {otpStatus}
                 </Alert>
               )}
@@ -349,7 +362,7 @@ export default function ProfilePage() {
 
               {otpStatus && <Alert tone="info">{otpStatus}</Alert>}
 
-              {!editingDetails && !needsDetails && (
+              {!editingDetails && (
                 <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-white/80">
                   <div className="mb-2">
                     <span className="block font-semibold text-white">
@@ -388,7 +401,7 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {(editingDetails || needsDetails) && (
+              {editingDetails && (
                 <form onSubmit={handleSaveDetails} className="space-y-3">
                   <InputField
                     label="Name"

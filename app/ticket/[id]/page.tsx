@@ -23,7 +23,7 @@ export default function TicketPage() {
 
   const booking = useMemo(
     () => bookings.find((b) => b.ticketToken === token),
-    [bookings, token]
+    [bookings, token],
   );
 
   useEffect(() => {
@@ -38,6 +38,8 @@ export default function TicketPage() {
       if (mounted) {
         setRemoteBooking((fetched?.booking ?? null) as (typeof bookings)[0]);
         setFocusTicketId(fetched?.focusTicketId ?? null);
+        setLoading(false);
+      } else {
         setLoading(false);
       }
     };
@@ -75,7 +77,6 @@ export default function TicketPage() {
           Ticket not found. Complete a checkout to generate a ticket.
         </div>
       )}
-
       {resolvedBooking &&
         ((resolvedBooking.tickets && resolvedBooking.tickets.length > 0) ||
           resolvedBooking.cartItems.length > 0) && (
@@ -84,7 +85,7 @@ export default function TicketPage() {
               {resolvedBooking.tickets && resolvedBooking.tickets.length > 0
                 ? resolvedBooking.tickets
                     .filter((t) =>
-                      focusTicketId ? t.id === focusTicketId : true
+                      focusTicketId ? t.id === focusTicketId : true,
                     )
                     .map((t) => <TicketInstanceCard key={t.id} ticket={t} />)
                 : resolvedBooking.cartItems.map((_, idx) => (

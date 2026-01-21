@@ -338,7 +338,24 @@ export async function validateTicket(req, res) {
       { $set: { isScanned: true, scannedAt: new Date() } },
     );
 
-    const updated = await Ticket.find({ booking: booking._id });
+    const updated = await Ticket.find({ booking: booking._id }).populate(
+      "event",
+      "venue placename location title date time price",
+    );
+    for (const ticket of updated) {
+      ticket.venue =
+        ticket.venue ||
+        ticket.event?.venue ||
+        ticket.event?.placename ||
+        ticket.location;
+      ticket.placename =
+        ticket.placename ||
+        ticket.event?.placename ||
+        ticket.event?.venue ||
+        ticket.location;
+      ticket.location =
+        ticket.location || ticket.event?.location || ticket.location;
+    }
     return res.json({ status: "scanned", tickets: updated, user });
   } catch (err) {
     return res.status(500).json({ error: err.message });

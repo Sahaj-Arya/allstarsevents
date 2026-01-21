@@ -47,7 +47,7 @@ export function TicketItemCard({
   const originalPrice = item.event.original_price;
   const hasDiscount =
     typeof originalPrice === "number" && originalPrice > item.event.price;
-  console.log(booking, " booking in ticket item card");
+  // console.log(booking, " booking in ticket item card");
 
   return (
     <TicketShell className="shrink-0 w-[260px] min-w-[260px] max-w-[320px] sm:w-[300px]">
@@ -109,7 +109,7 @@ export function TicketInstanceCard({
     }
   };
 
-  console.log(ticket, "ticket");
+  // console.log(ticket, "ticket");
 
   return (
     <TicketShell className="shrink-0 w-[260px] min-w-[260px] max-w-[320px] sm:w-[300px]">
@@ -184,7 +184,7 @@ export function TicketCard({ booking }: { booking: Booking }) {
       await navigator.clipboard.writeText(url);
     }
   };
-  console.log(firstItem, "firstitem");
+  // console.log(firstItem, "firstitem");
 
   return (
     <TicketShell>
