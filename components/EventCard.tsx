@@ -5,8 +5,22 @@ import Link from "next/link";
 import Image from "next/image";
 import { FaMapMarkerAlt } from "react-icons/fa";
 
+function isVideoUrl(url?: string) {
+  if (!url) return false;
+  return /\.(mp4|webm|ogg|mov)$/i.test(url);
+}
+
 export function EventCard({ event }: { event: EventItem }) {
-  const primaryImage = event.photo || event.images?.[0] || "";
+  const allAssets = [
+    event.photo,
+    ...(event.images || []),
+    ...(event.media || []),
+  ].filter(Boolean) as string[];
+  const primaryImage =
+    allAssets.find((u) => !isVideoUrl(u)) ||
+    event.photo ||
+    event.images?.[0] ||
+    "";
   const eventSlug = event.id || event._id || "";
   const originalPrice = event.original_price;
   const hasDiscount =

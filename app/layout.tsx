@@ -21,11 +21,11 @@ const geistMono = Geist_Mono({
 // };
 
 export const metadata = {
-  title: "Allstars Studio",
+  title: "AllStars Studio",
   description: "Welcome to Donny's",
 
   openGraph: {
-    title: "Allstars Studio",
+    title: "AllStars Studio",
     images: ["../../public/favicon.png"],
   },
 };
