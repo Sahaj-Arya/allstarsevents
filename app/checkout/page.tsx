@@ -163,7 +163,7 @@ function CheckoutContent() {
   const eventSlug = event?.id || event?._id || "";
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    <div className="relative min-h-screen overflow-hidden bg-[#050506] text-white mx-auto max-w-4xl px-4 py-10">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-semibold text-white">Checkout</h1>
         <Link
@@ -173,8 +173,7 @@ function CheckoutContent() {
           Back to event
         </Link>
       </div>
-
-      <div className="mt-6 grid gap-6 md:grid-cols-[1.6fr_1fr]">
+      <div className="relative z-10 w-full py-8">
         <form
           onSubmit={handlePayClick}
           className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur"
@@ -200,12 +199,11 @@ function CheckoutContent() {
                   <p className="text-lg font-semibold text-white">
                     {event.title}
                   </p>
-                  <p className="text-sm text-white/70">
+                  <p className="text-sm text-white/70 pt-4">
                     {event.date} · {event.time}
                   </p>
-                  <p className="text-xs text-white/50">{event.location}</p>
                 </div>
-                <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/20">
+                <div className="flex items-center rounded-full border border-white/15 bg-black/20">
                   <button
                     type="button"
                     className="px-3 py-1 text-lg text-white/80 hover:text-white"
@@ -231,20 +229,14 @@ function CheckoutContent() {
           )}
 
           <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-white/80">
-            <p className="font-semibold text-white">
-              Payment mode: {paymentMode}
+            {/* <p className="font-semibold text-white">
+              On Payment: {paymentMode}
+            </p> */}
+
+            <p>
+              On successful payment ticket / tickets will be sent via SMS or on
+              your profile
             </p>
-            {paymentMode === "MOCK" ? (
-              <p>
-                Instant success. Switch to RAZORPAY when the backend key +
-                webhook are ready.
-              </p>
-            ) : (
-              <p>
-                Razorpay flow will trigger a hosted payment window. Keep the key
-                and backend online.
-              </p>
-            )}
           </div>
 
           {error && <Alert tone="error">{error}</Alert>}
@@ -254,7 +246,7 @@ function CheckoutContent() {
           </Button>
         </form>
 
-        <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur">
+        <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur mt-6">
           <p className="text-sm font-semibold text-white">Order summary</p>
           {!event && (
             <p className="text-sm text-white/60">No event selected.</p>
@@ -292,7 +284,6 @@ function CheckoutContent() {
           </p>
         </div>
       </div>
-
       {showAuthModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/60 p-6 shadow-xl backdrop-blur">
