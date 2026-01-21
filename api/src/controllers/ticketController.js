@@ -4,38 +4,63 @@ import { User } from "../models/User.js";
 import Ticket from "../models/Ticket.js";
 
 async function enrichBooking(booking) {
-  const tickets = await Ticket.find({ booking: booking._id }).sort({
-    createdAt: 1,
-  });
+  const tickets = await Ticket.find({ booking: booking._id })
+    .sort({ createdAt: 1 })
+    .populate("event", "venue placename location title date time price");
 
-  const ticketList = tickets.map((t) => ({
-    id: t._id.toString(),
-    eventId: t.eventId,
-    title: t.title,
-    price: t.price,
-    date: t.date,
-    time: t.time,
-    location: t.location,
-    seat: t.seat,
-    isScanned: Boolean(t.isScanned),
-    scannedAt: t.scannedAt,
-    createdAt: t.createdAt,
-  }));
+  const ticketList = tickets.map((t) => {
+    const venue = t.venue || t.event?.venue || t.event?.placename || t.location;
+    const placename =
+      t.placename || t.event?.placename || t.event?.venue || t.location;
+    const location = t.location || t.event?.location || "";
+    return {
+      id: t._id.toString(),
+      eventId: t.eventId,
+      title: t.title || t.event?.title,
+      price: t.price ?? t.event?.price,
+      date: t.date || t.event?.date,
+      time: t.time || t.event?.time,
+      location,
+      venue,
+      placename,
+      seat: t.seat,
+      isScanned: Boolean(t.isScanned),
+      scannedAt: t.scannedAt,
+      createdAt: t.createdAt,
+    };
+  });
 
   const grouped = new Map();
   for (const t of tickets) {
-    const key = [t.eventId, t.title, t.price, t.date, t.time, t.location].join(
-      "|"
-    );
+    const venue = t.venue || t.event?.venue || t.event?.placename || t.location;
+    const placename =
+      t.placename || t.event?.placename || t.event?.venue || t.location;
+    const location = t.location || t.event?.location || "";
+    const title = t.title || t.event?.title;
+    const price = t.price ?? t.event?.price;
+    const date = t.date || t.event?.date;
+    const time = t.time || t.event?.time;
+    const key = [
+      t.eventId,
+      title,
+      price,
+      date,
+      time,
+      location,
+      venue,
+      placename,
+    ].join("|");
 
     const existing = grouped.get(key) || {
       eventId: t.eventId,
-      title: t.title,
-      price: t.price,
+      title,
+      price,
       quantity: 0,
-      date: t.date,
-      time: t.time,
-      location: t.location,
+      date,
+      time,
+      location,
+      venue,
+      placename,
       ticketIds: [],
     };
 
@@ -149,27 +174,43 @@ export async function listTickets(req, res) {
         .skip(skip)
         .limit(limit)
         .populate("user", "name phone")
-        .populate("booking", "phone ticketToken"),
+        .populate("booking", "phone ticketToken")
+        .populate("event", "venue placename location title date time price"),
       Ticket.countDocuments(),
     ]);
 
-    const payload = tickets.map((ticket) => ({
-      id: ticket._id.toString(),
-      eventId: ticket.eventId,
-      title: ticket.title,
-      date: ticket.date,
-      time: ticket.time,
-      location: ticket.location,
-      seat: ticket.seat,
-      isScanned: Boolean(ticket.isScanned),
-      scannedAt: ticket.scannedAt,
-      createdAt: ticket.createdAt,
-      user: {
-        name: ticket.user?.name || "",
-        phone: ticket.user?.phone || ticket.booking?.phone || "",
-      },
-      bookingToken: ticket.booking?.ticketToken || "",
-    }));
+    const payload = tickets.map((ticket) => {
+      const venue =
+        ticket.venue ||
+        ticket.event?.venue ||
+        ticket.event?.placename ||
+        ticket.location;
+      const placename =
+        ticket.placename ||
+        ticket.event?.placename ||
+        ticket.event?.venue ||
+        ticket.location;
+      const location = ticket.location || ticket.event?.location || "";
+      return {
+        id: ticket._id.toString(),
+        eventId: ticket.eventId,
+        title: ticket.title || ticket.event?.title,
+        date: ticket.date || ticket.event?.date,
+        time: ticket.time || ticket.event?.time,
+        location,
+        venue,
+        placename,
+        seat: ticket.seat,
+        isScanned: Boolean(ticket.isScanned),
+        scannedAt: ticket.scannedAt,
+        createdAt: ticket.createdAt,
+        user: {
+          name: ticket.user?.name || "",
+          phone: ticket.user?.phone || ticket.booking?.phone || "",
+        },
+        bookingToken: ticket.booking?.ticketToken || "",
+      };
+    });
 
     return res.json({ tickets: payload, page, limit, total });
   } catch (err) {
@@ -218,8 +259,21 @@ export async function validateTicket(req, res) {
           path: "booking",
           select: "phone ticketToken user",
           populate: { path: "user", select: "name phone email" },
-        });
+        })
+        .populate("event", "venue placename location title date time price");
       if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+      ticket.venue =
+        ticket.venue ||
+        ticket.event?.venue ||
+        ticket.event?.placename ||
+        ticket.location;
+      ticket.placename =
+        ticket.placename ||
+        ticket.event?.placename ||
+        ticket.event?.venue ||
+        ticket.location;
+      ticket.location =
+        ticket.location || ticket.event?.location || ticket.location;
       const userDoc = ticket.user || ticket.booking?.user;
       const user = userDoc
         ? {
@@ -242,9 +296,27 @@ export async function validateTicket(req, res) {
       .exec();
     if (!booking) return res.status(404).json({ error: "Ticket not found" });
 
-    const tickets = await Ticket.find({ booking: booking._id });
+    const tickets = await Ticket.find({ booking: booking._id }).populate(
+      "event",
+      "venue placename location title date time price",
+    );
     if (tickets.length === 0) {
       return res.status(404).json({ error: "No tickets for booking" });
+    }
+
+    for (const ticket of tickets) {
+      ticket.venue =
+        ticket.venue ||
+        ticket.event?.venue ||
+        ticket.event?.placename ||
+        ticket.location;
+      ticket.placename =
+        ticket.placename ||
+        ticket.event?.placename ||
+        ticket.event?.venue ||
+        ticket.location;
+      ticket.location =
+        ticket.location || ticket.event?.location || ticket.location;
     }
 
     const allScanned = tickets.every((t) => t.isScanned);
@@ -263,7 +335,7 @@ export async function validateTicket(req, res) {
 
     await Ticket.updateMany(
       { booking: booking._id, isScanned: { $ne: true } },
-      { $set: { isScanned: true, scannedAt: new Date() } }
+      { $set: { isScanned: true, scannedAt: new Date() } },
     );
 
     const updated = await Ticket.find({ booking: booking._id });

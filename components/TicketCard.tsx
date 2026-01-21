@@ -47,6 +47,7 @@ export function TicketItemCard({
   const originalPrice = item.event.original_price;
   const hasDiscount =
     typeof originalPrice === "number" && originalPrice > item.event.price;
+  console.log(booking, " booking in ticket item card");
 
   return (
     <TicketShell className="shrink-0 w-[260px] min-w-[260px] max-w-[320px] sm:w-[300px]">
@@ -88,6 +89,8 @@ export function TicketInstanceCard({
     date?: string;
     time?: string;
     location?: string;
+    venue?: string;
+    placename?: string;
     seat?: string;
     isScanned: boolean;
     scannedAt?: string;
@@ -105,6 +108,8 @@ export function TicketInstanceCard({
       await navigator.clipboard.writeText(url);
     }
   };
+
+  console.log(ticket, "ticket");
 
   return (
     <TicketShell className="shrink-0 w-[260px] min-w-[260px] max-w-[320px] sm:w-[300px]">
@@ -132,7 +137,7 @@ export function TicketInstanceCard({
         </button>
       </div>
 
-      <div className="flex items-center justify-center rounded-xl border border-dashed border-white/15 bg-black/30 p-3 w-full">
+      <div className="flex items-center justify-center rounded-xl border border-dashed border-white/15 bg-black/30 p-2 w-full">
         <QRCode
           value={ticket.id}
           size={120}
@@ -146,16 +151,15 @@ export function TicketInstanceCard({
         {ticket.time ? ` · ${ticket.time}` : ""}
       </p>
       <div
-        className="rounded-2xl pt-6"
+        className="rounded-2xl pt-2"
         style={{ boxShadow: "0 4px 16px 0 rgba(0,0,0,0)" }}
       >
-        <p className="text-xs uppercase tracking-[0.2em] text-white/50">AT</p>
         <Link
           href={ticket?.location || ""}
           target="_blank"
           rel="noopener noreferrer"
         >
-          <p className="mt-2 text-lg font-semibold">{ticket?.venue || ""}</p>
+          <p className="mt-0 text-lg font-semibold">{ticket?.venue || ""}</p>
         </Link>
       </div>
       {ticket.seat && (
@@ -180,6 +184,8 @@ export function TicketCard({ booking }: { booking: Booking }) {
       await navigator.clipboard.writeText(url);
     }
   };
+  console.log(firstItem, "firstitem");
+
   return (
     <TicketShell>
       <div className="flex items-center justify-between w-full">
@@ -218,12 +224,12 @@ export function TicketCard({ booking }: { booking: Booking }) {
           rel="noopener noreferrer"
         >
           <p className="mt-2 text-lg font-semibold">
-            {firstItem?.event?.venue}
+            {firstItem?.event?.placename}
           </p>
         </Link>
       </div>
       <p className="text-sm text-white/70 text-center">
-        {firstItem?.event.location}
+        {firstItem?.event.placename}
       </p>
       <p className="text-sm text-white/80 text-center">
         Tickets:{" "}

@@ -41,6 +41,8 @@ export type Ticket = {
   date?: string;
   time?: string;
   location?: string;
+  venue?: string;
+  placename?: string;
   seat?: string;
   isScanned: boolean;
   scannedAt?: string;
@@ -76,6 +78,8 @@ export type AdminTicketListItem = {
   date?: string;
   time?: string;
   location?: string;
+  venue?: string;
+  placename?: string;
   seat?: string;
   isScanned: boolean;
   scannedAt?: string;

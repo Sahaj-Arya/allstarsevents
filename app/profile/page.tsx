@@ -435,7 +435,7 @@ export default function ProfilePage() {
           )}
         </Card>
 
-        <Card className="relative z-10 w-full py-4">
+        <Card className="mt-3 mx-auto overflow-x-auto px-3">
           <p className="text-sm font-semibold text-white">Tickets</p>
           {!isAuthed && (
             <p className="mt-2 text-sm text-white/60">
@@ -482,7 +482,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  <div className="mt-3 -mx-3 overflow-x-auto px-3">
+                  <div className="mt-3 mx-auto overflow-x-auto px-3">
                     <div className="flex flex-nowrap gap-3 pb-2 sm:flex-wrap sm:overflow-visible">
                       {booking?.tickets && booking?.tickets?.length > 0
                         ? booking?.tickets?.map((t) => (

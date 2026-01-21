@@ -17,7 +17,17 @@ export function createPaymentController(razorpay) {
       const normalizedCartItems =
         cartItems
           ?.map(
-            ({ eventId, title, price, quantity, date, time, location }) => ({
+            ({
+              eventId,
+              title,
+              price,
+              quantity,
+              date,
+              time,
+              location,
+              venue,
+              placename,
+            }) => ({
               eventId,
               title,
               price,
@@ -25,7 +35,9 @@ export function createPaymentController(razorpay) {
               date,
               time,
               location,
-            })
+              venue,
+              placename,
+            }),
           )
           .filter((item) => item.eventId) || [];
 
@@ -63,7 +75,7 @@ export function createPaymentController(razorpay) {
         amount = cartItems.reduce(
           (sum, item) =>
             sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
-          0
+          0,
         );
       }
       if (!amount || amount <= 0) {
@@ -110,17 +122,28 @@ export function createPaymentController(razorpay) {
           const eventDoc = await Event.findOne({ id: cartItem.eventId });
           if (!eventDoc) continue;
           const quantity = Math.max(1, Number(cartItem.quantity) || 1);
+          const venue =
+            eventDoc.venue || eventDoc.placename || eventDoc.location;
+          const placename =
+            eventDoc.placename || eventDoc.venue || eventDoc.location;
+          const location = eventDoc.location || cartItem.location || "";
+          const title = eventDoc.title || cartItem.title;
+          const price = Number(eventDoc.price ?? cartItem.price ?? 0);
+          const date = eventDoc.date || cartItem.date;
+          const time = eventDoc.time || cartItem.time;
           for (let i = 0; i < quantity; i++) {
             ticketsToCreate.push({
               event: eventDoc._id,
               user: booking.user,
               booking: booking._id,
               eventId: cartItem.eventId,
-              title: cartItem.title,
-              price: cartItem.price,
-              date: cartItem.date,
-              time: cartItem.time,
-              location: cartItem.location,
+              title,
+              price,
+              date,
+              time,
+              location,
+              venue,
+              placename,
             });
           }
         }

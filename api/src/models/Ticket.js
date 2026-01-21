@@ -22,6 +22,8 @@ const ticketSchema = new mongoose.Schema({
   date: String,
   time: String,
   location: String,
+  venue: String,
+  placename: String,
   seat: {
     type: String,
   },

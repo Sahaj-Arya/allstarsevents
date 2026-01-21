@@ -29,6 +29,8 @@ type ApiBooking = {
     date?: string;
     time?: string;
     location?: string;
+    venue?: string;
+    placename?: string;
     type?: string;
     ticketIds?: string[];
   }>;
@@ -44,6 +46,8 @@ type ApiBooking = {
     date?: string;
     time?: string;
     location?: string;
+    venue?: string;
+    placename?: string;
     seat?: string;
     isScanned?: boolean;
     scannedAt?: string;
@@ -277,6 +281,8 @@ function mapCartItemsForApi(cartItems: CartItem[]) {
     date: event.date,
     time: event.time,
     location: event.location,
+    venue: event.venue,
+    placename: event.placename,
     type: event.type,
     ticketIds,
   }));
@@ -294,6 +300,8 @@ function mapBookingFromApi(api: ApiBooking): Booking {
       date: item.date || "",
       time: item.time || "",
       location: item.location || "",
+      venue: item.venue || "",
+      placename: item.placename || "",
       type: (item.type as EventItem["type"]) || "event",
     },
     quantity: item.quantity || 1,
@@ -312,6 +320,8 @@ function mapBookingFromApi(api: ApiBooking): Booking {
         date: t.date,
         time: t.time,
         location: t.location,
+        venue: t.venue,
+        placename: t.placename,
         seat: t.seat,
         isScanned: Boolean(t.isScanned),
         scannedAt: t.scannedAt,
