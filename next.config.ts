@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
         hostname: "api.dev.events.allstarsstudio.in",
         pathname: "/uploads/**",
       },
+      {
+        protocol: "https",
+        hostname: "api.prod.allstarsstudio.in",
+        pathname: "/uploads/**",
+      },
     ],
   },
   allowedDevOrigins: ["*"],
