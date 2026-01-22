@@ -14,34 +14,34 @@ export default function CancellationRefundPage() {
 
       <p className="mb-3 text-sm text-white/80">
         This page explains our policy regarding cancellations and refunds for
-        bookings made with AllStars Studio. Please read the rules carefully
-        before making a booking.
+        bookings made with AllStars Studio. Please note: <strong>all sales are
+        final — no refunds will be issued under any circumstances.</strong>
+        Read the details below before making a booking.
       </p>
 
       <section className="mb-4">
         <h2 className="font-medium">1. Cancellations</h2>
         <p className="text-sm text-white/80">
-          Cancellations are accepted as per the event-specific terms. Some
-          events may be non-refundable. Check the event details for exact
-          cancellation windows.
+          All ticket sales are final. Customer-initiated cancellations are not
+          accepted and no refunds will be provided.
         </p>
       </section>
 
       <section className="mb-4">
         <h2 className="font-medium">2. Refunds</h2>
         <p className="text-sm text-white/80">
-          Refunds, when applicable, will be processed to the original payment
-          method. The time taken to appear in your account depends on the
-          payment provider.
+          We do not offer refunds for any purchases. This applies to all
+          payment methods and transactions. Please ensure you select the
+          correct date and ticket quantity before completing your purchase.
         </p>
       </section>
 
       <section className="mb-4">
         <h2 className="font-medium">3. Event Cancellation by AllStars</h2>
         <p className="text-sm text-white/80">
-          If AllStars Studio cancels an event, full refunds will be issued
-          unless otherwise stated. We will communicate next steps to affected
-          ticket holders.
+          If AllStars Studio cancels an event, we will make reasonable efforts
+          to offer a rescheduled date or a credit for future events. Refunds
+          will not be issued.
         </p>
       </section>
 

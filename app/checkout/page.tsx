@@ -234,8 +234,8 @@ function CheckoutContent() {
             </p> */}
 
             <p>
-              On successful payment ticket / tickets will be sent via SMS or on
-              your profile
+              On successful payment ticket(s) will be sent via SMS or on your
+              profile
             </p>
           </div>
 
@@ -278,10 +278,6 @@ function CheckoutContent() {
             <span>Total</span>
             <span>₹{total}</span>
           </div>
-          <p className="text-xs text-white/50">
-            Payments are mocked until Razorpay mode is enabled. Backend
-            endpoints are prepared: /payment/create-order and /payment/verify.
-          </p>
         </div>
       </div>
       {showAuthModal && (
@@ -394,8 +390,8 @@ function CheckoutContent() {
                   const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
                   setOtp(val);
                 }}
-                placeholder={STATIC_OTP || "123456"}
-                hint="Mock OTP flow; integrates with backend /auth/send-otp and /auth/verify-otp."
+                placeholder={"Enter OTP"}
+                // hint="Mock OTP flow; integrates with backend /auth/send-otp and /auth/verify-otp."
               />
 
               <div className="flex gap-3 pt-2">

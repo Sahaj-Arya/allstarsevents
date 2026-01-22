@@ -237,10 +237,8 @@ export default function ProfilePage() {
               />
               <p className="mt-3 text-sm text-white/70">
                 {mode === "login"
-                  ? "Login with phone + OTP to access your profile and tickets."
-                  : "Create an account with phone + OTP, then complete your details."}
-                Backend hooks to /auth/send-otp and /auth/verify-otp are ready;
-                static/bypass OTP supported via env.
+                  ? "Login with phone to access your profile and tickets."
+                  : "Create an account with phone, then fill your details."}
               </p>
 
               {error && (
@@ -284,15 +282,11 @@ export default function ProfilePage() {
                   </>
                 )}
 
-                {mode === "login" && (
-                  <Alert tone="info">
-                    Login with your phone. You can add name/email later.
-                  </Alert>
-                )}
-
                 <InputField
                   label="Phone"
                   required
+                  className="mt-2"
+                  placeholder="Your Phone Number"
                   requiredMark
                   value={phone}
                   inputMode="numeric"
@@ -328,6 +322,7 @@ export default function ProfilePage() {
 
                 <InputField
                   label="OTP"
+                  className="mt-2"
                   required
                   requiredMark
                   value={otp}
@@ -340,8 +335,7 @@ export default function ProfilePage() {
                       .slice(0, 6);
                     setOtp(val);
                   }}
-                  placeholder={STATIC_OTP || "123456"}
-                  hint="Use the code sent to your phone. If bypass/static OTP is on, the placeholder shows the accepted code."
+                  placeholder={"Enter 6 digit OTP"}
                 />
 
                 <Button type="submit" fullWidth disabled={otpLoading}>
