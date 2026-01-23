@@ -1,8 +1,52 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EventDetailsActions } from "../../../components/EventDetailsActions";
 import { fetchEventById } from "../../../lib/api";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
+  const id = params.id;
+  const event = await fetchEventById(id);
+  if (!event) {
+    return {
+      title: `Event ${id} | AllStars`,
+      description: "Book your ticket now",
+    };
+  }
+
+  const media = event.media?.length
+    ? event.media
+    : event.images?.length
+      ? event.images
+      : event.photo
+        ? [event.photo]
+        : [];
+
+  const imageUrl = media[1] || media[0];
+
+  return {
+    title: `${event.title || `Event ${id}`} | AllStars`,
+    description: event.description || "Book your ticket now",
+    openGraph: {
+      title: `${event.title || `Event ${id}`} | AllStars`,
+      description: event.description || "Book your ticket now",
+      images: imageUrl
+        ? [
+            {
+              url: imageUrl,
+              width: 1200,
+              height: 630,
+            },
+          ]
+        : [],
+    },
+  };
+}
 
 function isVideoUrl(url: string) {
   return /\.(mp4|webm|ogg|mov)$/i.test(url);
