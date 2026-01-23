@@ -32,6 +32,9 @@ export async function generateMetadata({
   return {
     title: `${event.title || `Event ${id}`} | AllStars`,
     description: event.description || "Book your ticket now",
+    icons: {
+      icon: imageUrl ?? "../../../public/assets/allstars_studio.png",
+    },
     openGraph: {
       title: `${event.title || `Event ${id}`} | AllStars`,
       description: event.description || "Book your ticket now",
