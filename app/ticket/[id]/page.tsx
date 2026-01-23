@@ -34,13 +34,19 @@ export default function TicketPage() {
         return;
       }
       setLoading(true);
-      const fetched = await fetchShareableTicket(token);
-      if (mounted) {
-        setRemoteBooking((fetched?.booking ?? null) as (typeof bookings)[0]);
-        setFocusTicketId(fetched?.focusTicketId ?? null);
-        setLoading(false);
-      } else {
-        setLoading(false);
+      try {
+        const fetched = await fetchShareableTicket(token);
+        if (mounted) {
+          setRemoteBooking((fetched?.booking ?? null) as (typeof bookings)[0]);
+          setFocusTicketId(fetched?.focusTicketId ?? null);
+        }
+      } catch (err) {
+        if (mounted) {
+          setRemoteBooking(null);
+          setFocusTicketId(null);
+        }
+      } finally {
+        if (mounted) setLoading(false);
       }
     };
 

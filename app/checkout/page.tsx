@@ -8,6 +8,7 @@ import { fetchEventById, fetchTickets, getPaymentMode } from "../../lib/api";
 import { startCheckout } from "../../lib/payment";
 import { CartItem, EventItem, UserProfile } from "../../lib/types";
 import { Button } from "../../components/ui/Button";
+import Spinner from "../../components/ui/Spinner";
 import { InputField } from "../../components/ui/InputField";
 import { Alert } from "../../components/ui/Alert";
 import { STATIC_OTP, sendOtp, verifyOtp } from "../../lib/otp";
@@ -242,7 +243,14 @@ function CheckoutContent() {
           {error && <Alert tone="error">{error}</Alert>}
 
           <Button type="submit" fullWidth disabled={loading || !event}>
-            {loading ? "Processing..." : `Pay ₹${total}`}
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <Spinner size={18} />
+                <span>Processing...</span>
+              </span>
+            ) : (
+              `Pay ₹${total}`
+            )}
           </Button>
         </form>
 
@@ -347,8 +355,15 @@ function CheckoutContent() {
                     }
                   }}
                   disabled={otpLoading || !modalPhone}
-                >
-                  {otpLoading ? "Sending..." : "Send OTP"}
+> 
+                  {otpLoading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Spinner size={14} />
+                      <span>Sending...</span>
+                    </span>
+                  ) : (
+                    "Send OTP"
+                  )}
                 </Button>
                 <Button
                   type="button"
@@ -372,8 +387,15 @@ function CheckoutContent() {
                     }
                   }}
                   disabled={otpLoading || !modalPhone}
-                >
-                  {otpLoading ? "..." : "Resend"}
+> 
+                  {otpLoading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Spinner size={12} />
+                      <span>...</span>
+                    </span>
+                  ) : (
+                    "Resend"
+                  )}
                 </Button>
               </div>
               {otpStatus && <Alert tone="info">{otpStatus}</Alert>}
@@ -408,7 +430,14 @@ function CheckoutContent() {
                   fullWidth
                   disabled={loading || otpLoading}
                 >
-                  {loading ? "Processing..." : "Verify & Pay"}
+                  {loading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Spinner size={16} />
+                      <span>Processing...</span>
+                    </span>
+                  ) : (
+                    "Verify & Pay"
+                  )}
                 </Button>
               </div>
             </form>
