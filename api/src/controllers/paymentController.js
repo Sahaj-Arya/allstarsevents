@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { Booking } from "../models/Booking.js";
 import Ticket from "../models/Ticket.js";
+import { sendTicketViaSms } from "../utils/otp.js";
 
 export function createPaymentController(razorpay) {
   return {
@@ -156,7 +157,8 @@ export function createPaymentController(razorpay) {
         }
 
         const createdTickets = await Ticket.insertMany(ticketsToCreate);
-
+        // console.log(booking, phone, booking?.ticketToken?.toString());
+        await sendTicketViaSms(phone, booking?.ticketToken?.toString());
         return res.json({ ok: true, booking, tickets: createdTickets });
       } catch (err) {
         return res.status(500).json({ error: err.message });

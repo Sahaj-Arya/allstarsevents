@@ -1,81 +1,48 @@
-import { v4 as uuidv4 } from "uuid";
 import jwt from "jsonwebtoken";
-import { OtpRequest } from "../models/OtpRequest.js";
 import { User } from "../models/User.js";
-import { incrementOtpSent } from "../utils/stats.js";
-
-const OTP_TTL_MS = 5 * 60 * 1000;
+import {
+  generateOtpCode,
+  getTestOtpConfig,
+  isTestNumber,
+  createOtpRequest,
+  getOtpMessage,
+  sendOtpViaSms,
+  trackOtpSent,
+  verifyOtpRequest,
+} from "../utils/otp.js";
 
 export async function sendOtp(req, res) {
   const { phone } = req.body;
   if (!phone) return res.status(400).json({ error: "phone required" });
 
-  const requestId = uuidv4();
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = new Date(Date.now() + OTP_TTL_MS);
-
-  const staticOtp = process.env.STATIC_OTP || "000000";
-  const testNumbers = (process.env.OTP_TEST_NUMBERS || "")
-    .split(",")
-    .map((n) => n.trim())
-    .filter(Boolean);
-  const testCode = process.env.OTP_TEST_CODE || staticOtp;
-
-  const smsUser = process.env.SMS_UNAME;
-  const smsPass = process.env.SMS_PASS;
-  const smsSender = process.env.SMS_SENDER;
-  const smsBrand = process.env.SMS_BRAND || "RojgarApp";
-
-  const isTestNumber = testNumbers.includes(phone);
-  const otpToUse = isTestNumber ? testCode : code;
-
-  await OtpRequest.create({ phone, code: otpToUse, requestId, expiresAt });
-
-  if (isTestNumber) {
-    console.info("OTP test number; skipping SMS", { phone });
-    try {
-      await incrementOtpSent();
-    } catch (err) {
-      console.warn("Failed to increment OTP stats", err);
-    }
-    return res.json({ requestId });
-  }
-
-  if (!smsUser || !smsPass || !smsSender) {
-    return res.status(500).json({ error: "SMS provider not configured" });
-  }
-
-  const msg = `Hello! Please use the OTP ${otpToUse} to login to the ${smsBrand} dashboard. FMSPL`;
-  const url =
-    "http://164.52.195.161/API/SendMsg.aspx" +
-    `?uname=${smsUser}` +
-    `&pass=${smsPass}` +
-    `&send=${smsSender}` +
-    `&dest=${phone}` +
-    `&msg=${msg}` +
-    `&priority=1`;
-
   try {
-    const resp = await fetch(url);
+    const code = generateOtpCode();
+    const { testNumbers, testCode } = getTestOtpConfig();
+    const testNumber = testNumbers.includes(phone);
+    const otpToUse = testNumber ? testCode : code;
 
-    if (!resp.ok) {
-      return res.status(502).json({ error: "Failed to send OTP" });
+    const { requestId } = await createOtpRequest(phone, otpToUse);
+
+    if (testNumber) {
+      console.info("OTP test number; skipping SMS", { phone });
+      await trackOtpSent();
+      return res.json({ requestId });
     }
-    try {
-      await incrementOtpSent();
-    } catch (err) {
-      console.warn("Failed to increment OTP stats", err);
-    }
+
+    const message = getOtpMessage(otpToUse);
+    await sendOtpViaSms(phone, message);
+    await trackOtpSent();
+
+    return res.json({ requestId });
   } catch (err) {
-    return res.status(502).json({ error: "Failed to send OTP" });
+    console.error("Error sending OTP:", err);
+    return res.status(500).json({ error: err.message || "Failed to send OTP" });
   }
-
-  return res.json({ requestId });
 }
 
 export async function verifyOtp(req, res) {
   const { phone, otp, requestId, name, email } = req.body;
-  const staticOtp = process.env.STATIC_OTP || "000000";
+  const { staticOtp } = getTestOtpConfig();
   const jwtSecret = process.env.JWT_SECRET;
 
   if (!phone || !otp || !requestId) {
@@ -86,25 +53,29 @@ export async function verifyOtp(req, res) {
     return res.status(500).json({ error: "JWT_SECRET missing" });
   }
 
-  if (otp === staticOtp) {
-    // Allow static OTP for dev/test, but do not bypass on any flag
+  try {
+    // Check if static OTP (for dev/test)
+    if (otp === staticOtp) {
+      const user = await upsertUser(phone, { name, email });
+      const token = signUser(user, jwtSecret);
+      return res.json({ ok: true, user, token });
+    }
+
+    // Verify OTP from database
+    const verification = await verifyOtpRequest(phone, otp, requestId);
+    if (!verification.valid) {
+      return res.status(400).json({ error: verification.error });
+    }
+
     const user = await upsertUser(phone, { name, email });
     const token = signUser(user, jwtSecret);
     return res.json({ ok: true, user, token });
+  } catch (err) {
+    console.error("Error verifying OTP:", err);
+    return res
+      .status(500)
+      .json({ error: err.message || "Failed to verify OTP" });
   }
-
-  const found = await OtpRequest.findOne({ requestId, phone, consumed: false });
-  if (!found) return res.status(400).json({ error: "invalid" });
-  if (found.expiresAt < new Date())
-    return res.status(400).json({ error: "expired" });
-  if (found.code !== otp) return res.status(400).json({ error: "incorrect" });
-
-  found.consumed = true;
-  await found.save();
-
-  const user = await upsertUser(phone, { name, email });
-  const token = signUser(user, jwtSecret);
-  return res.json({ ok: true, user, token });
 }
 
 export async function updateProfile(req, res) {
@@ -168,6 +139,6 @@ function signUser(user, secret) {
       email: user.email,
     },
     secret,
-    { expiresIn: "7d" }
+    { expiresIn: "7d" },
   );
 }
