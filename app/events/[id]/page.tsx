@@ -8,10 +8,11 @@ import { fetchEventById } from "../../../lib/api";
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const id = params.id;
+  const { id } = await params;
   const event = await fetchEventById(id);
+
   if (!event) {
     return {
       title: `Event ${id} | AllStars`,
