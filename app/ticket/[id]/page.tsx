@@ -72,11 +72,11 @@ export default function TicketPage() {
         </Link>
       </div>
 
-      {loading && (
+      {/* {loading && (
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-6 text-white/70 backdrop-blur">
           Loading ticket...
         </div>
-      )}
+      )} */}
 
       {!loading && !resolvedBooking && (
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-6 text-white/70 backdrop-blur">
