@@ -191,6 +191,8 @@ export function createPaymentController(razorpay) {
     },
 
     handleWebhook: async (req, res) => {
+      console.log("started");
+
       const webhookStartTime = new Date().toISOString();
       console.log(`\n${"=".repeat(80)}`);
       console.log(`📨 WEBHOOK RECEIVED: ${webhookStartTime}`);
