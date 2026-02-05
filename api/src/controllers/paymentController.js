@@ -55,7 +55,7 @@ export function createPaymentController(razorpay) {
           currency: "INR",
           receipt: `rcpt_${Date.now()}`,
           notes: {
-            userId: userId || '',
+            userId: userId || "",
             phone,
             cartItems: JSON.stringify(normalizedCartItems),
           },
@@ -196,7 +196,9 @@ export function createPaymentController(razorpay) {
         const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
         if (!webhookSecret) {
           console.error("⚠️  RAZORPAY_WEBHOOK_SECRET not configured");
-          return res.status(500).json({ error: "Webhook secret not configured" });
+          return res
+            .status(500)
+            .json({ error: "Webhook secret not configured" });
         }
 
         const signature = req.headers["x-razorpay-signature"];
@@ -251,7 +253,7 @@ export function createPaymentController(razorpay) {
         const userId = orderDetails.notes?.userId;
         const phone = orderDetails.notes?.phone;
         let cartItems = [];
-        
+
         try {
           cartItems = JSON.parse(orderDetails.notes?.cartItems || "[]");
           console.log("🛒 Cart items:", cartItems.length, "items");
@@ -267,11 +269,11 @@ export function createPaymentController(razorpay) {
         // Find user by ID or phone
         const { User } = await import("../models/User.js");
         let user;
-        
+
         if (userId) {
           user = await User.findById(userId);
         }
-        
+
         if (!user) {
           user = await User.findOne({ phone });
         }
@@ -319,7 +321,7 @@ export function createPaymentController(razorpay) {
           const price = Number(eventDoc.price ?? cartItem.price ?? 0);
           const date = eventDoc.date || cartItem.date;
           const time = eventDoc.time || cartItem.time;
-          
+
           for (let i = 0; i < quantity; i++) {
             ticketsToCreate.push({
               event: eventDoc._id,
@@ -341,13 +343,17 @@ export function createPaymentController(razorpay) {
           await Ticket.insertMany(ticketsToCreate);
           await sendTicketViaSms(phone, ticketToken);
           console.log(
-            `✅ Webhook: Created ${ticketsToCreate.length} tickets for booking ${booking._id}`
+            `✅ Webhook: Created ${ticketsToCreate.length} tickets for booking ${booking._id}`,
           );
         } else {
           console.error("❌ No valid tickets to create");
         }
 
-        return res.json({ ok: true, message: "Webhook processed", ticketCount: ticketsToCreate.length });
+        return res.json({
+          ok: true,
+          message: "Webhook processed",
+          ticketCount: ticketsToCreate.length,
+        });
       } catch (err) {
         console.error("❌ Webhook error:", err);
         return res.status(500).json({ error: err.message });

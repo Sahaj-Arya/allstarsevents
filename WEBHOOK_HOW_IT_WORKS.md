@@ -53,34 +53,39 @@
 ## ✅ What Was Fixed:
 
 ### **Problem 1: Order notes weren't being saved**
+
 **Before:**
+
 ```javascript
 const order = await razorpay.orders.create({
   amount: 100000,
   currency: "INR",
-  receipt: "rcpt_123"
+  receipt: "rcpt_123",
   // ❌ No notes - webhook can't find user/cart!
 });
 ```
 
 **After:**
+
 ```javascript
 const order = await razorpay.orders.create({
   amount: 100000,
   currency: "INR",
   receipt: "rcpt_123",
   notes: {
-    userId: "user123",           // ✅ Now stored
-    phone: "9876543210",         // ✅ Now stored
-    cartItems: "[{...}]"         // ✅ Now stored
-  }
+    userId: "user123", // ✅ Now stored
+    phone: "9876543210", // ✅ Now stored
+    cartItems: "[{...}]", // ✅ Now stored
+  },
 });
 ```
 
 ### **Problem 2: Webhook handler was missing**
+
 **Before:** No `/payment/webhook` endpoint existed ❌
 
 **After:** Complete webhook handler with:
+
 - Signature verification ✅
 - Order fetching ✅
 - User lookup (by ID or phone) ✅
@@ -89,6 +94,7 @@ const order = await razorpay.orders.create({
 - Detailed logging ✅
 
 ### **Problem 3: Duplicate tickets prevention**
+
 **Added:** Check if booking exists before creating new one
 
 ---
@@ -96,6 +102,7 @@ const order = await razorpay.orders.create({
 ## 🚀 Deploy & Test:
 
 ### **1. Commit & push:**
+
 ```bash
 git add .
 git commit -m "Add complete webhook implementation with order notes"
@@ -107,6 +114,7 @@ git push
 ### **3. Check logs after payment:**
 
 You should see:
+
 ```
 ✅ Webhook received: payment.captured
 💳 Payment captured: { orderId: 'order_xyz', paymentId: 'pay_abc', amount: 1000 }
@@ -118,6 +126,7 @@ You should see:
 ```
 
 If something fails, you'll see:
+
 ```
 ❌ RAZORPAY_WEBHOOK_SECRET not configured
 ❌ Invalid webhook signature
@@ -145,6 +154,7 @@ If something fails, you'll see:
 ## 🔑 Environment Variable:
 
 Add to your `.env`:
+
 ```bash
 RAZORPAY_WEBHOOK_SECRET=whsec_your_secret_from_razorpay_dashboard
 ```
