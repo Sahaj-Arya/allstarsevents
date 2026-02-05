@@ -295,30 +295,64 @@ export function createPaymentController(razorpay) {
 
         // Fetch order details to get cart items and user info
         let orderDetails;
+        let cartItems = [];
+        let userId = null;
+        let phone = null;
+
         try {
           orderDetails = await razorpay.orders.fetch(orderId);
           console.log("4️⃣  📦 Order fetched from Razorpay:", orderId);
-        } catch (err) {
-          console.error("❌ Error fetching order:", err.message);
-          console.log(`${"=".repeat(80)}\n`);
-          return res.status(500).json({ error: "Could not fetch order" });
-        }
+          userId = orderDetails.notes?.userId;
+          phone = orderDetails.notes?.phone;
 
-        const userId = orderDetails.notes?.userId;
-        const phone = orderDetails.notes?.phone;
-        let cartItems = [];
-
-        try {
-          cartItems = JSON.parse(orderDetails.notes?.cartItems || "[]");
-          console.log("5️⃣  🛒 Cart items parsed:", cartItems.length, "item(s)");
+          try {
+            cartItems = JSON.parse(orderDetails.notes?.cartItems || "[]");
+            console.log(
+              "5️⃣  🛒 Cart items parsed:",
+              cartItems.length,
+              "item(s)",
+            );
+          } catch (err) {
+            console.error("❌ Error parsing cart items:", err.message);
+            cartItems = [];
+          }
         } catch (err) {
-          console.error("❌ Error parsing cart items:", err.message);
+          console.error("⚠️  Error fetching order from Razorpay:", err.message);
+          console.warn(
+            "   Attempting fallback: checking if order notes available in webhook payload",
+          );
+
+          // Fallback: try to extract from webhook payload if available
+          if (event.payload.order?.notes) {
+            try {
+              userId = event.payload.order.notes.userId;
+              phone = event.payload.order.notes.phone;
+              cartItems = JSON.parse(
+                event.payload.order.notes.cartItems || "[]",
+              );
+              console.log("📦 Order details from webhook payload instead");
+              console.log(
+                "🛒 Cart items extracted:",
+                cartItems.length,
+                "item(s)",
+              );
+            } catch (fallbackErr) {
+              console.error("❌ Fallback also failed:", fallbackErr.message);
+            }
+          }
         }
 
         if (!phone || cartItems.length === 0) {
-          console.error("❌ Missing phone or cart items in order notes");
+          console.error("❌ Missing phone or cart items - cannot proceed");
+          console.error(`   Phone: ${phone}`);
+          console.error(`   CartItems count: ${cartItems.length}`);
           console.log(`${"=".repeat(80)}\n`);
-          return res.status(400).json({ error: "Missing order data" });
+          return res
+            .status(400)
+            .json({
+              error:
+                "Missing order data - cannot fetch from Razorpay or webhook",
+            });
         }
 
         // Find user by ID or phone

@@ -3,12 +3,14 @@
 ## ✅ What's Implemented
 
 ### Scenario 1: User Stays on App (Frontend Callback)
+
 1. User clicks "Pay Now"
 2. Payment succeeds
 3. Frontend receives callback → calls `/payment/verify`
 4. **Result:** Booking created, Tickets created, SMS sent ✅
 
 ### Scenario 2: User Closes App After Payment (Webhook)
+
 1. User clicks "Pay Now"
 2. Payment succeeds in Razorpay
 3. User closes browser/app ❌
@@ -26,6 +28,7 @@
 6. **Result:** Booking created, Tickets created, SMS sent ✅
 
 ### Scenario 3: User Reopens App to Check Booking
+
 1. User has already paid and closed app
 2. Webhook already created booking + tickets
 3. User opens app and goes to profile
@@ -37,6 +40,7 @@
 ## 🔒 Duplicate Prevention
 
 Both paths check for existing booking:
+
 ```javascript
 const existingBooking = await Booking.findOne({
   razorpayPaymentId: paymentId
@@ -52,44 +56,51 @@ if (existingBooking) {
 ## 📋 Complete Flow Checklist
 
 ✅ Order creation stores:
-  - userId
-  - phone
-  - cartItems (as JSON string)
+
+- userId
+- phone
+- cartItems (as JSON string)
 
 ✅ Webhook fetches order and extracts:
-  - userId (to find user)
-  - phone (backup user lookup)
-  - cartItems (to create tickets)
+
+- userId (to find user)
+- phone (backup user lookup)
+- cartItems (to create tickets)
 
 ✅ Creates booking with:
-  - user
-  - phone
-  - amount
-  - status = "paid"
-  - ticketToken
-  - razorpayOrderId
-  - razorpayPaymentId (unique identifier)
+
+- user
+- phone
+- amount
+- status = "paid"
+- ticketToken
+- razorpayOrderId
+- razorpayPaymentId (unique identifier)
 
 ✅ Creates tickets:
-  - For each cartItem
-  - With correct event, price, date, time, location
-  - Links to booking
+
+- For each cartItem
+- With correct event, price, date, time, location
+- Links to booking
 
 ✅ Sends SMS:
-  - To user phone
-  - With ticket token
-  - User can click to view tickets
+
+- To user phone
+- With ticket token
+- User can click to view tickets
 
 ✅ Logs all steps:
-  - 1️⃣-9️⃣ numbered progress
-  - Payment details logged
-  - Booking ID logged
-  - Ticket count logged
-  - SMS confirmation logged
+
+- 1️⃣-9️⃣ numbered progress
+- Payment details logged
+- Booking ID logged
+- Ticket count logged
+- SMS confirmation logged
 
 ## 🧪 Testing Instructions
 
 ### Test 1: Webhook After Closing App
+
 1. Go to checkout
 2. Make payment
 3. Close browser immediately
@@ -98,6 +109,7 @@ if (existingBooking) {
 6. User should have received SMS ✅
 
 ### Test 2: Reopen App to Check Booking
+
 1. After webhook completes, open app
 2. Go to Profile/Bookings
 3. Query by razorpayPaymentId
@@ -105,6 +117,7 @@ if (existingBooking) {
 5. Should NOT allow rebooking ✅
 
 ### Test 3: Frontend Callback Still Works
+
 1. Make payment and stay on page
 2. Frontend callback should process
 3. Check if duplicate (should see "Already processed by webhook") ✅
@@ -132,15 +145,19 @@ if (existingBooking) {
 ## ⚠️ Potential Issues & Fixes
 
 ### Issue: "Invalid signature"
+
 - **Fix:** Verify `RAZORPAY_WEBHOOK_SECRET` matches Razorpay dashboard secret exactly
 
 ### Issue: "User not found"
+
 - **Fix:** Ensure order notes have `phone` field when creating order
 
 ### Issue: "Missing phone or cart items"
+
 - **Fix:** Check that `createOrder` properly stores notes
 
 ### Issue: No SMS sent
+
 - **Fix:** Verify SMS service is working (check `/utils/otp.js`)
 
 ## 🚀 Deployment Checklist
