@@ -202,22 +202,35 @@ export function createPaymentController(razorpay) {
         }
 
         const signature = req.headers["x-razorpay-signature"];
-        const rawBody = req.body instanceof Buffer ? req.body : req.rawBody;
-        const body = rawBody
-          ? rawBody.toString("utf8")
-          : JSON.stringify(req.body);
+
+        // req.body should be a Buffer because of express.raw() middleware
+        let body = req.body;
+        if (!Buffer.isBuffer(body)) {
+          // Fallback if somehow not a buffer
+          body = Buffer.from(JSON.stringify(req.body));
+        }
 
         const expectedSignature = crypto
           .createHmac("sha256", webhookSecret)
           .update(body)
           .digest("hex");
 
+        console.log("🔐 Verifying signature", {
+          received: signature?.substring(0, 20) + "...",
+          expected: expectedSignature.substring(0, 20) + "...",
+          bodyLength: body.length,
+          secretLength: webhookSecret.length,
+        });
+
         if (signature !== expectedSignature) {
           console.error("❌ Invalid webhook signature");
+          console.error("   Expected:", expectedSignature);
+          console.error("   Received:", signature);
           return res.status(400).json({ error: "Invalid signature" });
         }
 
-        const event = req.body instanceof Buffer ? JSON.parse(body) : req.body;
+        // Parse body for event data
+        const event = JSON.parse(body.toString("utf8"));
         console.log("✅ Webhook received:", event.event);
 
         // Only process payment.captured events
