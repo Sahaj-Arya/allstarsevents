@@ -17,10 +17,7 @@ const app = express();
 app.use(cors());
 
 // Razorpay webhooks require raw body for signature verification
-app.use(
-  "/payment/webhook",
-  express.raw({ type: "application/json" })
-);
+app.use("/payment/webhook", express.raw({ type: "application/json" }));
 
 app.use(express.json());
 
@@ -39,7 +36,7 @@ app.get("/health", (_req, res) => res.json({ ok: true }));
 
 const razorpay = createRazorpay(
   process.env.RAZORPAY_KEY_ID,
-  process.env.RAZORPAY_KEY_SECRET
+  process.env.RAZORPAY_KEY_SECRET,
 );
 
 app.use("/auth", authRoutes);

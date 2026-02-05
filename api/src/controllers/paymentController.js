@@ -203,7 +203,9 @@ export function createPaymentController(razorpay) {
 
         const signature = req.headers["x-razorpay-signature"];
         const rawBody = req.body instanceof Buffer ? req.body : req.rawBody;
-        const body = rawBody ? rawBody.toString("utf8") : JSON.stringify(req.body);
+        const body = rawBody
+          ? rawBody.toString("utf8")
+          : JSON.stringify(req.body);
 
         const expectedSignature = crypto
           .createHmac("sha256", webhookSecret)

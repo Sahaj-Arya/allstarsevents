@@ -8,7 +8,13 @@ export default function paymentRoutes(razorpay) {
 
   // Webhook endpoint - MUST be before verifyAuth middleware
   // Razorpay uses signature verification, not JWT
-  router.post("/webhook", controller.handleWebhook);
+  router.post("/webhook", (req, _res, next) => {
+    console.log("🔔 Webhook hit", {
+      hasSignature: Boolean(req.headers["x-razorpay-signature"]),
+      contentType: req.headers["content-type"],
+    });
+    next();
+  }, controller.handleWebhook);
 
   router.use(verifyAuth);
   router.post("/create-order", controller.createOrder);
