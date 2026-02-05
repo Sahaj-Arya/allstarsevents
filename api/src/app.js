@@ -15,6 +15,18 @@ dotenv.config();
 
 const app = express();
 app.use(cors());
+
+// Important: Webhook route needs raw body for signature verification
+// Must be defined BEFORE express.json() middleware
+const razorpay = createRazorpay(
+  process.env.RAZORPAY_KEY_ID,
+  process.env.RAZORPAY_KEY_SECRET
+);
+app.use(
+  "/payment/webhook",
+  express.json({ verify: (req, res, buf) => (req.rawBody = buf) })
+);
+
 app.use(express.json());
 
 const uploadDir = process.env.UPLOAD_DIR || "uploads";
@@ -29,11 +41,6 @@ const publicUploadBase =
     : "/uploads";
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
-
-const razorpay = createRazorpay(
-  process.env.RAZORPAY_KEY_ID,
-  process.env.RAZORPAY_KEY_SECRET
-);
 
 app.use("/auth", authRoutes);
 app.use("/payment", paymentRoutes(razorpay));

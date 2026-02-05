@@ -53,6 +53,10 @@ export function createPaymentController(razorpay) {
           amount: Math.round(amount * 100),
           currency: "INR",
           receipt: `rcpt_${Date.now()}`,
+          notes: {
+            phone,
+            cartItems: JSON.stringify(normalizedCartItems),
+          },
         });
         // Only return order, do not create booking yet
         return res.json({ ok: true, order });
@@ -98,6 +102,25 @@ export function createPaymentController(razorpay) {
 
       if (digest !== razorpay_signature) {
         return res.status(400).json({ error: "signature mismatch" });
+      }
+
+      // Check if booking already exists for this payment (webhook may have processed it)
+      try {
+        const existingBooking = await Booking.findOne({
+          razorpayPaymentId: razorpay_payment_id,
+        }).populate("user");
+
+        if (existingBooking) {
+          const tickets = await Ticket.find({ booking: existingBooking._id });
+          return res.json({
+            ok: true,
+            booking: existingBooking,
+            tickets,
+            note: "Already processed",
+          });
+        }
+      } catch (err) {
+        console.error("Error checking existing booking:", err);
       }
 
       const ticketToken = crypto.randomUUID();
@@ -164,6 +187,144 @@ export function createPaymentController(razorpay) {
         return res.status(500).json({ error: err.message });
       }
       // ...existing code...
+    },
+
+    handleWebhook: async (req, res) => {
+      try {
+        // Verify webhook signature
+        const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+        if (!webhookSecret) {
+          console.error("RAZORPAY_WEBHOOK_SECRET not configured");
+          return res.status(500).json({ error: "Webhook secret not configured" });
+        }
+
+        const signature = req.headers["x-razorpay-signature"];
+        const body = JSON.stringify(req.body);
+
+        const expectedSignature = crypto
+          .createHmac("sha256", webhookSecret)
+          .update(body)
+          .digest("hex");
+
+        if (signature !== expectedSignature) {
+          console.error("Invalid webhook signature");
+          return res.status(400).json({ error: "Invalid signature" });
+        }
+
+        const event = req.body;
+        console.log("Webhook received:", event.event);
+
+        // Only process payment.captured events
+        if (event.event !== "payment.captured") {
+          return res.json({ ok: true, message: "Event ignored" });
+        }
+
+        const payment = event.payload.payment.entity;
+        const orderId = payment.order_id;
+        const paymentId = payment.id;
+        const amount = payment.amount / 100; // Convert paise to rupees
+
+        // Check if booking already exists
+        const existingBooking = await Booking.findOne({
+          razorpayPaymentId: paymentId,
+        });
+
+        if (existingBooking) {
+          console.log("Booking already exists for payment:", paymentId);
+          return res.json({ ok: true, message: "Already processed" });
+        }
+
+        // Fetch order details to get cart items and phone
+        let orderDetails;
+        try {
+          orderDetails = await razorpay.orders.fetch(orderId);
+        } catch (err) {
+          console.error("Error fetching order details:", err);
+          return res.status(500).json({ error: "Could not fetch order" });
+        }
+
+        const phone = orderDetails.notes?.phone;
+        let cartItems = [];
+        try {
+          cartItems = JSON.parse(orderDetails.notes?.cartItems || "[]");
+        } catch (err) {
+          console.error("Error parsing cart items:", err);
+        }
+
+        if (!phone || cartItems.length === 0) {
+          console.error("Missing phone or cart items in order notes");
+          return res.status(400).json({ error: "Missing order data" });
+        }
+
+        // Find user by phone
+        const { User } = await import("../models/User.js");
+        const user = await User.findOne({ phone });
+        if (!user) {
+          console.error("User not found for phone:", phone);
+          return res.status(404).json({ error: "User not found" });
+        }
+
+        const ticketToken = crypto.randomUUID();
+
+        // Create booking
+        const booking = await Booking.create({
+          user: user._id,
+          phone,
+          amount,
+          paymentMode: "RAZORPAY",
+          status: "paid",
+          ticketToken,
+          razorpayOrderId: orderId,
+          razorpayPaymentId: paymentId,
+        });
+
+        // Create tickets
+        const { Event } = await import("../models/Event.js");
+        const ticketsToCreate = [];
+
+        for (const cartItem of cartItems) {
+          const eventDoc = await Event.findOne({ id: cartItem.eventId });
+          if (!eventDoc) continue;
+          const quantity = Math.max(1, Number(cartItem.quantity) || 1);
+          const venue =
+            eventDoc.venue || eventDoc.placename || eventDoc.location;
+          const placename =
+            eventDoc.placename || eventDoc.venue || eventDoc.location;
+          const location = eventDoc.location || cartItem.location || "";
+          const title = eventDoc.title || cartItem.title;
+          const price = Number(eventDoc.price ?? cartItem.price ?? 0);
+          const date = eventDoc.date || cartItem.date;
+          const time = eventDoc.time || cartItem.time;
+          for (let i = 0; i < quantity; i++) {
+            ticketsToCreate.push({
+              event: eventDoc._id,
+              user: booking.user,
+              booking: booking._id,
+              eventId: cartItem.eventId,
+              title,
+              price,
+              date,
+              time,
+              location,
+              venue,
+              placename,
+            });
+          }
+        }
+
+        if (ticketsToCreate.length > 0) {
+          await Ticket.insertMany(ticketsToCreate);
+          await sendTicketViaSms(phone, ticketToken);
+          console.log(
+            `Webhook: Created ${ticketsToCreate.length} tickets for booking ${booking._id}`
+          );
+        }
+
+        return res.json({ ok: true, message: "Webhook processed" });
+      } catch (err) {
+        console.error("Webhook error:", err);
+        return res.status(500).json({ error: err.message });
+      }
     },
   };
 }
