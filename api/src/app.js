@@ -15,6 +15,13 @@ dotenv.config();
 
 const app = express();
 app.use(cors());
+
+// Razorpay webhooks require raw body for signature verification
+app.use(
+  "/payment/webhook",
+  express.raw({ type: "application/json" })
+);
+
 app.use(express.json());
 
 const uploadDir = process.env.UPLOAD_DIR || "uploads";

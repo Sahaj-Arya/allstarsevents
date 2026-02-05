@@ -202,7 +202,8 @@ export function createPaymentController(razorpay) {
         }
 
         const signature = req.headers["x-razorpay-signature"];
-        const body = JSON.stringify(req.body);
+        const rawBody = req.body instanceof Buffer ? req.body : req.rawBody;
+        const body = rawBody ? rawBody.toString("utf8") : JSON.stringify(req.body);
 
         const expectedSignature = crypto
           .createHmac("sha256", webhookSecret)
@@ -214,7 +215,7 @@ export function createPaymentController(razorpay) {
           return res.status(400).json({ error: "Invalid signature" });
         }
 
-        const event = req.body;
+        const event = req.body instanceof Buffer ? JSON.parse(body) : req.body;
         console.log("✅ Webhook received:", event.event);
 
         // Only process payment.captured events
