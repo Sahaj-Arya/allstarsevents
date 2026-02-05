@@ -191,6 +191,11 @@ export function createPaymentController(razorpay) {
     },
 
     handleWebhook: async (req, res) => {
+      const webhookStartTime = new Date().toISOString();
+      console.log(`\n${"=".repeat(80)}`);
+      console.log(`📨 WEBHOOK RECEIVED: ${webhookStartTime}`);
+      console.log(`${"=".repeat(80)}`);
+
       try {
         // Verify webhook signature
         const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
@@ -202,6 +207,10 @@ export function createPaymentController(razorpay) {
         }
 
         const signature = req.headers["x-razorpay-signature"];
+        console.log(
+          "1️⃣  Signature header received:",
+          signature?.substring(0, 30) + "...",
+        );
 
         // req.body should be a Buffer because of express.raw() middleware
         let body = req.body;
@@ -210,32 +219,53 @@ export function createPaymentController(razorpay) {
           body = Buffer.from(JSON.stringify(req.body));
         }
 
+        console.log("   📦 Raw body length:", body.length);
+        console.log("   🔑 Secret length:", webhookSecret.length);
+        console.log(
+          "   🔑 Secret (first 20 chars):",
+          webhookSecret.substring(0, 20),
+        );
+
         const expectedSignature = crypto
           .createHmac("sha256", webhookSecret)
           .update(body)
           .digest("hex");
 
-        console.log("🔐 Verifying signature", {
-          received: signature?.substring(0, 20) + "...",
-          expected: expectedSignature.substring(0, 20) + "...",
-          bodyLength: body.length,
-          secretLength: webhookSecret.length,
+        console.log("🔐 Signature Verification Debug:", {
+          received: signature,
+          expected: expectedSignature,
+          match: signature === expectedSignature,
         });
 
         if (signature !== expectedSignature) {
-          console.error("❌ Invalid webhook signature");
-          console.error("   Expected:", expectedSignature);
-          console.error("   Received:", signature);
+          console.error("❌ SIGNATURE MISMATCH!");
+          console.error("   Received signature:", signature);
+          console.error("   Expected signature:", expectedSignature);
+          console.error(
+            "   Secret configured:",
+            webhookSecret
+              ? `${webhookSecret.substring(0, 20)}... (length: ${webhookSecret.length})`
+              : "NOT SET",
+          );
+          console.error(
+            "   Body sample:",
+            body.toString("utf8").substring(0, 100),
+          );
+          console.log(`${"=".repeat(80)}\n`);
           return res.status(400).json({ error: "Invalid signature" });
         }
 
         // Parse body for event data
         const event = JSON.parse(body.toString("utf8"));
-        console.log("✅ Webhook received:", event.event);
+        console.log("2️⃣  ✅ Signature verified! Event type:", event.event);
 
         // Only process payment.captured events
         if (event.event !== "payment.captured") {
-          console.log("ℹ️  Ignoring event:", event.event);
+          console.log(
+            "ℹ️  Ignoring event (not payment.captured):",
+            event.event,
+          );
+          console.log(`${"=".repeat(80)}\n`);
           return res.json({ ok: true, message: "Event ignored" });
         }
 
@@ -244,7 +274,11 @@ export function createPaymentController(razorpay) {
         const paymentId = payment.id;
         const amount = payment.amount / 100; // Convert paise to rupees
 
-        console.log("💳 Payment captured:", { orderId, paymentId, amount });
+        // Log payment details
+        console.log("3️⃣  💳 Payment captured:", { orderId, paymentId, amount });
+        console.log(
+          `   📊 Payment Log: ${paymentId} | ₹${amount} | Order: ${orderId} | Time: ${webhookStartTime}`,
+        );
 
         // Check if booking already exists
         const existingBooking = await Booking.findOne({
@@ -253,6 +287,7 @@ export function createPaymentController(razorpay) {
 
         if (existingBooking) {
           console.log("ℹ️  Booking already exists for payment:", paymentId);
+          console.log(`${"=".repeat(80)}\n`);
           return res.json({ ok: true, message: "Already processed" });
         }
 
@@ -260,9 +295,10 @@ export function createPaymentController(razorpay) {
         let orderDetails;
         try {
           orderDetails = await razorpay.orders.fetch(orderId);
-          console.log("📦 Order fetched:", orderId);
+          console.log("4️⃣  📦 Order fetched from Razorpay:", orderId);
         } catch (err) {
-          console.error("❌ Error fetching order:", err);
+          console.error("❌ Error fetching order:", err.message);
+          console.log(`${"=".repeat(80)}\n`);
           return res.status(500).json({ error: "Could not fetch order" });
         }
 
@@ -272,13 +308,14 @@ export function createPaymentController(razorpay) {
 
         try {
           cartItems = JSON.parse(orderDetails.notes?.cartItems || "[]");
-          console.log("🛒 Cart items:", cartItems.length, "items");
+          console.log("5️⃣  🛒 Cart items parsed:", cartItems.length, "item(s)");
         } catch (err) {
-          console.error("❌ Error parsing cart items:", err);
+          console.error("❌ Error parsing cart items:", err.message);
         }
 
         if (!phone || cartItems.length === 0) {
           console.error("❌ Missing phone or cart items in order notes");
+          console.log(`${"=".repeat(80)}\n`);
           return res.status(400).json({ error: "Missing order data" });
         }
 
@@ -296,10 +333,11 @@ export function createPaymentController(razorpay) {
 
         if (!user) {
           console.error("❌ User not found for phone:", phone);
+          console.log(`${"=".repeat(80)}\n`);
           return res.status(404).json({ error: "User not found" });
         }
 
-        console.log("👤 User found:", user.phone);
+        console.log("6️⃣  👤 User found:", user.phone, "ID:", user._id);
 
         const ticketToken = crypto.randomUUID();
 
@@ -315,7 +353,10 @@ export function createPaymentController(razorpay) {
           razorpayPaymentId: paymentId,
         });
 
-        console.log("📝 Booking created:", booking._id);
+        console.log("7️⃣  📝 Booking created:", booking._id);
+        console.log(
+          `   💾 Payment Record: PayID=${paymentId} | Phone=${phone} | Amount=₹${amount} | Booking=${booking._id}`,
+        );
 
         // Create tickets
         const { Event } = await import("../models/Event.js");
@@ -359,10 +400,16 @@ export function createPaymentController(razorpay) {
           await Ticket.insertMany(ticketsToCreate);
           await sendTicketViaSms(phone, ticketToken);
           console.log(
-            `✅ Webhook: Created ${ticketsToCreate.length} tickets for booking ${booking._id}`,
+            `8️⃣  ✅ Created ${ticketsToCreate.length} ticket(s) for booking ${booking._id}`,
           );
+          console.log("9️⃣  📱 SMS sent to:", phone);
+          console.log(
+            `   ✨ SUCCESS: Payment ${paymentId} processed | ${ticketsToCreate.length} tickets created | SMS sent`,
+          );
+          console.log(`${"=".repeat(80)}\n`);
         } else {
           console.error("❌ No valid tickets to create");
+          console.log(`${"=".repeat(80)}\n`);
         }
 
         return res.json({
@@ -371,7 +418,9 @@ export function createPaymentController(razorpay) {
           ticketCount: ticketsToCreate.length,
         });
       } catch (err) {
-        console.error("❌ Webhook error:", err);
+        console.error("❌ WEBHOOK ERROR:", err.message);
+        console.error(err.stack);
+        console.log(`${"=".repeat(80)}\n`);
         return res.status(500).json({ error: err.message });
       }
     },
