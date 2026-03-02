@@ -159,7 +159,7 @@ export default function AdminTicketsPage() {
                 {booking.tickets && booking.tickets.length > 0
                   ? booking.tickets
                       .filter((t) =>
-                        focusTicketId ? t.id === focusTicketId : true
+                        focusTicketId ? t.id === focusTicketId : true,
                       )
                       .map((t) => <TicketInstanceCard key={t.id} ticket={t} />)
                   : booking.cartItems.map((_, idx) => (

@@ -25,7 +25,17 @@ export function getOtpMessage(code, brandName = OTP_CONFIG.BRAND) {
  * @returns {string} Formatted ticket message with QR
  */
 export function getTicketMessage(ticketId) {
-  return `Your%20ticket%20is%20ready.%0Ahttps%3A%2F%2Fwww.allstarsstudio.in%2Fticket%2F${ticketId}%0APlease%20show%20this%20ticket%20link%20%28QR%29%20at%20the%20entry.%20OAVPL`;
+  return getTypedTicketMessage(ticketId, "event");
+}
+
+export function getTypedTicketMessage(ticketId, bookingType = "event") {
+  const label = bookingType === "workshop" ? "workshop pass" : "event ticket";
+  const intro =
+    bookingType === "workshop"
+      ? "Your workshop pass is ready."
+      : "Your event ticket is ready.";
+  const message = `${intro}\nhttps://www.allstarsstudio.in/ticket/${ticketId}\nPlease show this ${label} link (QR) at the entry. ${OTP_CONFIG.FOOTER}`;
+  return encodeURIComponent(message);
 }
 
 /**
@@ -194,7 +204,7 @@ export async function trackOtpSent() {
  * @param {string} ticketId - Ticket ID
  * @returns {Promise<boolean>} Success status
  */
-export async function sendTicketViaSms(phone, ticketId) {
-  const message = getTicketMessage(ticketId);
+export async function sendTicketViaSms(phone, ticketId, bookingType = "event") {
+  const message = getTypedTicketMessage(ticketId, bookingType);
   return await sendOtpViaSms(phone, message);
 }

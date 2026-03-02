@@ -9,10 +9,8 @@ import {
   Ticket,
 } from "./types";
 
-const DEFAULT_API_HOST =
-  typeof window !== "undefined" ? window.location.hostname : "localhost";
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || `http://${DEFAULT_API_HOST}:4000`;
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.prod.allstarsstudio.in";
 const PAYMENT_MODE = "RAZORPAY";
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
 
@@ -302,7 +300,10 @@ function mapBookingFromApi(api: ApiBooking): Booking {
       location: item.location || "",
       venue: item.venue || "",
       placename: item.placename || "",
-      type: (item.type as EventItem["type"]) || "event",
+      type:
+        item.type === "class"
+          ? "workshop"
+          : (item.type as EventItem["type"]) || "event",
     },
     quantity: item.quantity || 1,
     ticketIds: item.ticketIds || [],

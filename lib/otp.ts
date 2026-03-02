@@ -1,7 +1,7 @@
 import { fireAlert } from "./alerts";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.prod.allstarsstudio.in";
 
 export const STATIC_OTP = process.env.NEXT_PUBLIC_STATIC_OTP || "000000";
 
@@ -37,7 +37,7 @@ export async function verifyOtp(
   phone: string,
   otp: string,
   requestId: string,
-  extra?: { name?: string; email?: string }
+  extra?: { name?: string; email?: string },
 ): Promise<VerifyResult> {
   try {
     const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {

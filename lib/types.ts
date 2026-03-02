@@ -1,4 +1,4 @@
-export type EventType = "event" | "class";
+export type EventType = "event" | "workshop";
 
 export type EventAboutSection = {
   title: string;

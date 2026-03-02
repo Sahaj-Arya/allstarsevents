@@ -26,7 +26,11 @@ const eventSchema = new mongoose.Schema(
     date: { type: String, required: true },
     time: { type: String, required: true },
     location: { type: String, required: true },
-    type: { type: String, enum: ["event", "class"], default: "event" },
+    type: {
+      type: String,
+      enum: ["event", "workshop", "class"],
+      default: "event",
+    },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true },

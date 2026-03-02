@@ -27,10 +27,21 @@ const normalizeAbout = (value) => {
   return [];
 };
 
+const normalizeEventType = (value) => {
+  if (value === "class") return "workshop";
+  if (value === "workshop") return "workshop";
+  return "event";
+};
+
+const normalizeEventOutput = (event) => ({
+  ...event,
+  type: normalizeEventType(event?.type),
+});
+
 export async function listEvents(_req, res) {
   try {
     const events = await Event.find({}).sort({ date: 1, time: 1 }).lean();
-    return res.json(events);
+    return res.json(events.map(normalizeEventOutput));
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -44,7 +55,7 @@ export async function getEventById(req, res) {
       query.push({ _id: id });
     }
     const event = await Event.findOne({ $or: query }).lean();
-    if (event) return res.json(event);
+    if (event) return res.json(normalizeEventOutput(event));
 
     return res.status(404).json({ error: "Event not found" });
   } catch (err) {
@@ -96,12 +107,12 @@ export async function createEvent(req, res) {
       date,
       time,
       location,
-      type: type || "event",
+      type: normalizeEventType(type),
       isActive: typeof isActive === "boolean" ? isActive : true,
       about: normalizeAbout(about),
     });
 
-    return res.status(201).json(event);
+    return res.status(201).json(normalizeEventOutput(event.toObject()));
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -127,6 +138,8 @@ export async function updateEvent(req, res) {
       media: update.media !== undefined ? toArray(update.media) : undefined,
       about:
         update.about !== undefined ? normalizeAbout(update.about) : undefined,
+      type:
+        update.type !== undefined ? normalizeEventType(update.type) : undefined,
     };
 
     Object.keys(payload).forEach((key) => {
@@ -138,7 +151,7 @@ export async function updateEvent(req, res) {
     }).lean();
 
     if (!event) return res.status(404).json({ error: "Event not found" });
-    return res.json(event);
+    return res.json(normalizeEventOutput(event));
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

@@ -122,9 +122,12 @@ export default function AdminEventsPage() {
     <div className="mx-auto max-w-3xl px-6 py-10">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold text-white">Manage events</h1>
+          <h1 className="text-3xl font-semibold text-white">
+            Manage events & workshops
+          </h1>
           <p className="mt-2 text-sm text-white/70">
-            Create or update event details. Upload images or videos below.
+            Create or update event/workshop details. Upload images or videos
+            below.
           </p>
         </div>
         <Link
@@ -246,14 +249,21 @@ export default function AdminEventsPage() {
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-white">Event ID</span>
+            <span className="text-sm font-semibold text-white">
+              Event/Workshop ID
+            </span>
             <input
               className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
               value={id}
               onChange={(e) => setId(e.target.value)}
-              placeholder="evt-delhi-night"
+              placeholder="evt-delhi-night or wrk-acting-101"
               required
             />
+            <span className="text-xs text-white/50">
+              Use prefixes like <strong>evt-</strong> for events and
+              <strong> wrk-</strong> for workshops for easy admin
+              identification.
+            </span>
           </label>
           <label className="space-y-2">
             <span className="text-sm font-semibold text-white">Title</span>
@@ -377,7 +387,7 @@ export default function AdminEventsPage() {
               onChange={(e) => setType(e.target.value as EventItem["type"])}
             >
               <option value="event">Event</option>
-              <option value="class">Class</option>
+              <option value="workshop">Workshop</option>
             </select>
           </label>
         </div>
@@ -435,8 +445,8 @@ export default function AdminEventsPage() {
           {loading
             ? "Saving..."
             : mode === "create"
-              ? "Create event"
-              : "Update event"}
+              ? "Create event/workshop"
+              : "Update event/workshop"}
         </button>
 
         {(error || parsedAbout.error) && (

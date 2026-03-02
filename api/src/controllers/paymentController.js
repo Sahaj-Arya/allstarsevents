@@ -3,6 +3,16 @@ import { Booking } from "../models/Booking.js";
 import Ticket from "../models/Ticket.js";
 import { sendTicketViaSms } from "../utils/otp.js";
 
+function normalizeEventType(value) {
+  if (value === "class") return "workshop";
+  if (value === "workshop") return "workshop";
+  return "event";
+}
+
+function resolveSmsTemplateType(typeSet) {
+  return typeSet.size === 1 && typeSet.has("workshop") ? "workshop" : "event";
+}
+
 export function createPaymentController(razorpay) {
   return {
     createOrder: async (req, res) => {
@@ -143,10 +153,12 @@ export function createPaymentController(razorpay) {
         // Create tickets
         const { Event } = await import("../models/Event.js");
         const ticketsToCreate = [];
+        const cartEventTypes = new Set();
 
         for (const cartItem of cartItems) {
           const eventDoc = await Event.findOne({ id: cartItem.eventId });
           if (!eventDoc) continue;
+          cartEventTypes.add(normalizeEventType(eventDoc.type));
           const quantity = Math.max(1, Number(cartItem.quantity) || 1);
           const venue =
             eventDoc.venue || eventDoc.placename || eventDoc.location;
@@ -183,7 +195,11 @@ export function createPaymentController(razorpay) {
 
         const createdTickets = await Ticket.insertMany(ticketsToCreate);
         // console.log(booking, phone, booking?.ticketToken?.toString());
-        await sendTicketViaSms(phone, booking?.ticketToken?.toString());
+        await sendTicketViaSms(
+          phone,
+          booking?.ticketToken?.toString(),
+          resolveSmsTemplateType(cartEventTypes),
+        );
         return res.json({ ok: true, booking, tickets: createdTickets });
       } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -344,6 +360,7 @@ export function createPaymentController(razorpay) {
         // Create tickets
         const { Event } = await import("../models/Event.js");
         const ticketsToCreate = [];
+        const cartEventTypes = new Set();
 
         for (const cartItem of cartItems) {
           const eventDoc = await Event.findOne({ id: cartItem.eventId });
@@ -351,6 +368,7 @@ export function createPaymentController(razorpay) {
             console.warn("⚠️  Event not found:", cartItem.eventId);
             continue;
           }
+          cartEventTypes.add(normalizeEventType(eventDoc.type));
           const quantity = Math.max(1, Number(cartItem.quantity) || 1);
           const venue =
             eventDoc.venue || eventDoc.placename || eventDoc.location;
@@ -381,7 +399,11 @@ export function createPaymentController(razorpay) {
 
         if (ticketsToCreate.length > 0) {
           await Ticket.insertMany(ticketsToCreate);
-          await sendTicketViaSms(phone, ticketToken);
+          await sendTicketViaSms(
+            phone,
+            ticketToken,
+            resolveSmsTemplateType(cartEventTypes),
+          );
           console.log(
             `✅ Created ${ticketsToCreate.length} ticket(s) for booking ${booking._id}`,
           );
