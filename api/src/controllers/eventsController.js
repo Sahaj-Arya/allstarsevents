@@ -227,3 +227,20 @@ export async function updateEvent(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
+export async function deleteEvent(req, res) {
+  try {
+    const { id } = req.params;
+    const query = [{ id }];
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query.push({ _id: id });
+    }
+
+    const event = await Event.findOneAndDelete({ $or: query }).lean();
+    if (!event) return res.status(404).json({ error: "Event not found" });
+
+    return res.json({ ok: true, id: event.id });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}

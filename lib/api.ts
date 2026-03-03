@@ -208,6 +208,20 @@ export async function updateEvent(
   return data as EventItem;
 }
 
+export async function deleteEvent(id: string): Promise<{ ok: boolean; id?: string }> {
+  const res = await fetch(`${API_BASE_URL}/events/${id}`, {
+    method: "DELETE",
+  });
+  const data = await res.json().catch(() => ({}) as { error?: string; ok?: boolean; id?: string });
+  if (!res.ok) {
+    const message = data?.error || "Failed to delete event";
+    fireAlert("error", message);
+    throw new Error(message);
+  }
+  fireAlert("success", "Event deleted");
+  return { ok: Boolean(data?.ok), id: data?.id };
+}
+
 export async function fetchTicketsByPhoneAdmin(
   phone: string,
 ): Promise<Booking[]> {
