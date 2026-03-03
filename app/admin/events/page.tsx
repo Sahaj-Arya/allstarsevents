@@ -88,6 +88,32 @@ const splitDateTimeLocalValue = (value: string) => {
   };
 };
 
+const getEventLifecycleStatus = (event: EventItem) => {
+  if (event.lifecycleStatus) return event.lifecycleStatus;
+  const date = toDateInputValue(event.date);
+  const time = toTimeInputValue(event.time) || "00:00";
+  if (date) {
+    const parsed = Date.parse(`${date}T${time}`);
+    if (!Number.isNaN(parsed) && parsed < Date.now()) return "past" as const;
+  }
+  if (event.isActive === false) return "inactive" as const;
+  return "active" as const;
+};
+
+const lifecycleRank = (status: "active" | "inactive" | "past") => {
+  if (status === "active") return 0;
+  if (status === "inactive") return 1;
+  return 2;
+};
+
+const toEventTimeValue = (event: EventItem) => {
+  const date = toDateInputValue(event.date);
+  const time = toTimeInputValue(event.time) || "00:00";
+  if (!date) return Number.POSITIVE_INFINITY;
+  const parsed = Date.parse(`${date}T${time}`);
+  return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed;
+};
+
 export default function AdminEventsPage() {
   const [mode, setMode] = useState<"create" | "update">("create");
   const [id, setId] = useState("");
@@ -135,7 +161,9 @@ export default function AdminEventsPage() {
     setDescription(event.description || "");
     setPrice(String(event.price ?? ""));
     setOriginalPrice(
-      typeof event.original_price === "number" ? String(event.original_price) : "",
+      typeof event.original_price === "number"
+        ? String(event.original_price)
+        : "",
     );
     setPhoto(event.photo || "");
     setImages((event.images || []).join("\n"));
@@ -176,7 +204,9 @@ export default function AdminEventsPage() {
       const data = await fetchEvents();
       setEvents(data || []);
     } catch (err) {
-      setEventsError(err instanceof Error ? err.message : "Failed to load events");
+      setEventsError(
+        err instanceof Error ? err.message : "Failed to load events",
+      );
     } finally {
       setEventsLoading(false);
     }
@@ -208,13 +238,23 @@ export default function AdminEventsPage() {
 
   const filteredEvents = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return events;
-    return events.filter(
+    const filtered = events.filter(
       (event) =>
         event.title?.toLowerCase().includes(query) ||
         event.id?.toLowerCase().includes(query) ||
         event.type?.toLowerCase().includes(query),
     );
+    return filtered.sort((a, b) => {
+      const aStatus = getEventLifecycleStatus(a);
+      const bStatus = getEventLifecycleStatus(b);
+      const rankDiff = lifecycleRank(aStatus) - lifecycleRank(bStatus);
+      if (rankDiff !== 0) return rankDiff;
+
+      const aTime = toEventTimeValue(a);
+      const bTime = toEventTimeValue(b);
+      if (aStatus === "past") return bTime - aTime;
+      return aTime - bTime;
+    });
   }, [events, searchQuery]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -227,17 +267,16 @@ export default function AdminEventsPage() {
       }
       const repeatPayload: EventItem["repeat"] = {
         enabled: type === "class" && repeatEnabled,
-        frequency:
-          type === "class" && repeatEnabled
-            ? repeatFrequency
-            : "none",
+        frequency: type === "class" && repeatEnabled ? repeatFrequency : "none",
         interval: Math.max(1, Number(repeatInterval) || 1),
         until:
           type === "class" && repeatEnabled && repeatUntil.trim().length > 0
             ? repeatUntil
             : "",
         occurrences:
-          type === "class" && repeatEnabled && repeatOccurrences.trim().length > 0
+          type === "class" &&
+          repeatEnabled &&
+          repeatOccurrences.trim().length > 0
             ? Math.max(1, Number(repeatOccurrences) || 1)
             : null,
       };
@@ -272,9 +311,14 @@ export default function AdminEventsPage() {
           : await updateEvent(id, payload);
       setResult(event);
       if (mode === "update") {
-        setEvents((prev) => prev.map((item) => (item.id === event.id ? event : item)));
+        setEvents((prev) =>
+          prev.map((item) => (item.id === event.id ? event : item)),
+        );
       } else {
-        setEvents((prev) => [event, ...prev.filter((item) => item.id !== event.id)]);
+        setEvents((prev) => [
+          event,
+          ...prev.filter((item) => item.id !== event.id),
+        ]);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save event");
@@ -423,9 +467,16 @@ export default function AdminEventsPage() {
               >
                 <div className="flex items-center justify-between gap-2 text-xs text-white/60">
                   <span>{event.type}</span>
-                  <span>{event.date}</span>
+                  <div className="flex items-center gap-2">
+                    <span>{event.date}</span>
+                    <span className="rounded-full border border-white/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-white/80">
+                      {getEventLifecycleStatus(event)}
+                    </span>
+                  </div>
                 </div>
-                <p className="mt-1 text-sm font-semibold text-white">{event.title}</p>
+                <p className="mt-1 text-sm font-semibold text-white">
+                  {event.title}
+                </p>
                 <p className="text-xs text-white/60">{event.id}</p>
                 <div className="mt-2 flex items-center gap-2">
                   <button
@@ -597,7 +648,9 @@ export default function AdminEventsPage() {
             />
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-white">Date & Time</span>
+            <span className="text-sm font-semibold text-white">
+              Date & Time
+            </span>
             <input
               type="datetime-local"
               className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"

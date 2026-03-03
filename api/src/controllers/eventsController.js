@@ -83,16 +83,76 @@ const normalizeRepeat = (eventType, value) => {
   };
 };
 
+const toEventTimestamp = (dateValue, timeValue) => {
+  const datePart = typeof dateValue === "string" ? dateValue.trim() : "";
+  if (!datePart) return null;
+  const normalizedTime =
+    typeof timeValue === "string" && timeValue.trim().length > 0
+      ? timeValue.trim()
+      : "00:00";
+
+  const tryValues = [
+    `${datePart}T${normalizedTime}`,
+    `${datePart} ${normalizedTime}`,
+    datePart,
+  ];
+
+  for (const candidate of tryValues) {
+    const parsed = Date.parse(candidate);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+
+  return null;
+};
+
+const getLifecycleStatus = (event) => {
+  const eventTimestamp = toEventTimestamp(event?.date, event?.time);
+  if (eventTimestamp !== null && eventTimestamp < Date.now()) return "past";
+  if (event?.isActive === false) return "inactive";
+  return "active";
+};
+
+const getStatusRank = (status) => {
+  if (status === "active") return 0;
+  if (status === "inactive") return 1;
+  return 2;
+};
+
+const sortEventsByLifecycle = (events) => {
+  const now = Date.now();
+  return [...events].sort((a, b) => {
+    const aStatus = getLifecycleStatus(a);
+    const bStatus = getLifecycleStatus(b);
+    const rankDiff = getStatusRank(aStatus) - getStatusRank(bStatus);
+    if (rankDiff !== 0) return rankDiff;
+
+    const aTime = toEventTimestamp(a?.date, a?.time);
+    const bTime = toEventTimestamp(b?.date, b?.time);
+
+    if (aStatus === "past") {
+      const aPast = aTime === null ? Number.NEGATIVE_INFINITY : aTime;
+      const bPast = bTime === null ? Number.NEGATIVE_INFINITY : bTime;
+      return bPast - aPast;
+    }
+
+    const aUpcoming = aTime === null ? now + Number.MAX_SAFE_INTEGER : aTime;
+    const bUpcoming = bTime === null ? now + Number.MAX_SAFE_INTEGER : bTime;
+    return aUpcoming - bUpcoming;
+  });
+};
+
 const normalizeEventOutput = (event) => ({
   ...event,
   type: normalizeEventType(event?.type),
   repeat: normalizeRepeat(normalizeEventType(event?.type), event?.repeat),
+  lifecycleStatus: getLifecycleStatus(event),
 });
 
 export async function listEvents(_req, res) {
   try {
-    const events = await Event.find({}).sort({ date: 1, time: 1 }).lean();
-    return res.json(events.map(normalizeEventOutput));
+    const events = await Event.find({}).lean();
+    const normalized = events.map(normalizeEventOutput);
+    return res.json(sortEventsByLifecycle(normalized));
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -191,7 +251,8 @@ export async function updateEvent(req, res) {
       media: update.media !== undefined ? toArray(update.media) : undefined,
       about:
         update.about !== undefined ? normalizeAbout(update.about) : undefined,
-      type: update.type !== undefined ? normalizeEventType(update.type) : undefined,
+      type:
+        update.type !== undefined ? normalizeEventType(update.type) : undefined,
     };
 
     const effectiveType = payload.type || undefined;

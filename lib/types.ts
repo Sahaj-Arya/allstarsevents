@@ -36,6 +36,7 @@ export type EventItem = {
   type: EventType;
   repeat?: EventRepeatConfig;
   isActive?: boolean;
+  lifecycleStatus?: "active" | "inactive" | "past";
 };
 
 export type CartItem = {
