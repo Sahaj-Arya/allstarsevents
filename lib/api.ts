@@ -159,6 +159,7 @@ export async function createEvent(payload: {
   title: string;
   description?: string;
   price: number;
+  original_price?: number;
   photo?: string;
   images?: string[];
   media?: string[];
@@ -169,6 +170,7 @@ export async function createEvent(payload: {
   time: string;
   location: string;
   type?: EventItem["type"];
+  repeat?: EventItem["repeat"];
   isActive?: boolean;
   about?: EventItem["about"];
 }): Promise<EventItem> {
@@ -300,10 +302,7 @@ function mapBookingFromApi(api: ApiBooking): Booking {
       location: item.location || "",
       venue: item.venue || "",
       placename: item.placename || "",
-      type:
-        item.type === "class"
-          ? "workshop"
-          : (item.type as EventItem["type"]) || "event",
+      type: (item.type as EventItem["type"]) || "event",
     },
     quantity: item.quantity || 1,
     ticketIds: item.ticketIds || [],

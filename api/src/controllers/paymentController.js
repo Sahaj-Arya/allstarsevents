@@ -4,13 +4,16 @@ import Ticket from "../models/Ticket.js";
 import { sendTicketViaSms } from "../utils/otp.js";
 
 function normalizeEventType(value) {
-  if (value === "class") return "workshop";
+  if (value === "class") return "class";
   if (value === "workshop") return "workshop";
   return "event";
 }
 
 function resolveSmsTemplateType(typeSet) {
-  return typeSet.size === 1 && typeSet.has("workshop") ? "workshop" : "event";
+  if (typeSet.size === 1 && (typeSet.has("workshop") || typeSet.has("class"))) {
+    return "workshop";
+  }
+  return "event";
 }
 
 export function createPaymentController(razorpay) {

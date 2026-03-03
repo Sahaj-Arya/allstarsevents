@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { EventCard } from "../../components/EventCard";
 import { fetchEvents } from "../../lib/api";
 
@@ -19,7 +18,10 @@ export default async function EventsPage() {
           preload="auto"
           aria-hidden="true"
         >
-          <source src="/assets/IMG_0311.MP4" type="video/mp4" />
+          <source
+            src="https://api.prod.allstarsstudio.in/uploads/1772568700049-Video_Editing_Brighter_Colors.webm"
+            type="video/webm"
+          />
         </video>
         <div className="absolute inset-0 bg-black/70" />
       </div>
@@ -30,7 +32,7 @@ export default async function EventsPage() {
               Upcoming
             </p>
             <h1 className="text-3xl font-semibold md:text-xl">
-              Events & Classes
+              Events, Workshops & Classes
             </h1>
           </div>
           <div className="flex gap-3 text-sm font-semibold text-white/80"></div>

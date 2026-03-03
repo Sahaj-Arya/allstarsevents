@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createEvent, updateEvent, uploadImage } from "../../../lib/api";
 import { EventItem } from "../../../lib/types";
@@ -28,6 +28,13 @@ export default function AdminEventsPage() {
   const [time, setTime] = useState("");
   const [location, setLocation] = useState("");
   const [type, setType] = useState<EventItem["type"]>("event");
+  const [repeatEnabled, setRepeatEnabled] = useState(false);
+  const [repeatFrequency, setRepeatFrequency] = useState<
+    "daily" | "weekly" | "monthly"
+  >("weekly");
+  const [repeatInterval, setRepeatInterval] = useState("1");
+  const [repeatUntil, setRepeatUntil] = useState("");
+  const [repeatOccurrences, setRepeatOccurrences] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [aboutJson, setAboutJson] = useState("[]");
   const [result, setResult] = useState<EventItem | null>(null);
@@ -49,6 +56,16 @@ export default function AdminEventsPage() {
       return { value: [], error: "Invalid JSON" };
     }
   }, [aboutJson]);
+
+  useEffect(() => {
+    if (type !== "class") {
+      setRepeatEnabled(false);
+      setRepeatFrequency("weekly");
+      setRepeatInterval("1");
+      setRepeatUntil("");
+      setRepeatOccurrences("");
+    }
+  }, [type]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -75,6 +92,19 @@ export default function AdminEventsPage() {
         time,
         location,
         type,
+        repeat: {
+          enabled: type === "class" && repeatEnabled,
+          frequency: type === "class" && repeatEnabled ? repeatFrequency : "none",
+          interval: Math.max(1, Number(repeatInterval) || 1),
+          until:
+            type === "class" && repeatEnabled && repeatUntil.trim().length > 0
+              ? repeatUntil
+              : "",
+          occurrences:
+            type === "class" && repeatEnabled && repeatOccurrences.trim().length > 0
+              ? Math.max(1, Number(repeatOccurrences) || 1)
+              : null,
+        },
         isActive,
         about: parsedAbout.value,
       };
@@ -123,10 +153,10 @@ export default function AdminEventsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold text-white">
-            Manage events & workshops
+            Manage events, workshops & classes
           </h1>
           <p className="mt-2 text-sm text-white/70">
-            Create or update event/workshop details. Upload images or videos
+            Create or update event/workshop/class details. Upload images or videos
             below.
           </p>
         </div>
@@ -250,7 +280,7 @@ export default function AdminEventsPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
             <span className="text-sm font-semibold text-white">
-              Event/Workshop ID
+              Event/Workshop/Class ID
             </span>
             <input
               className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
@@ -261,7 +291,8 @@ export default function AdminEventsPage() {
             />
             <span className="text-xs text-white/50">
               Use prefixes like <strong>evt-</strong> for events and
-              <strong> wrk-</strong> for workshops for easy admin
+              <strong> wrk-</strong> for workshops and <strong> cls-</strong>
+              for classes for easy admin
               identification.
             </span>
           </label>
@@ -388,9 +419,85 @@ export default function AdminEventsPage() {
             >
               <option value="event">Event</option>
               <option value="workshop">Workshop</option>
+              <option value="class">Class</option>
             </select>
           </label>
         </div>
+
+        {type === "class" && (
+          <div className="space-y-4 rounded-2xl border border-white/10 bg-black/30 p-4">
+            <label className="flex items-center gap-2 text-sm text-white/80">
+              <input
+                type="checkbox"
+                checked={repeatEnabled}
+                onChange={(e) => setRepeatEnabled(e.target.checked)}
+              />
+              Repeat this class
+            </label>
+
+            {repeatEnabled && (
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-white">
+                    Repeat frequency
+                  </span>
+                  <select
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                    value={repeatFrequency}
+                    onChange={(e) =>
+                      setRepeatFrequency(
+                        e.target.value as "daily" | "weekly" | "monthly",
+                      )
+                    }
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-white">
+                    Every (interval)
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                    value={repeatInterval}
+                    onChange={(e) => setRepeatInterval(e.target.value)}
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-white">
+                    Repeat until (optional)
+                  </span>
+                  <input
+                    type="date"
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                    value={repeatUntil}
+                    onChange={(e) => setRepeatUntil(e.target.value)}
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-white">
+                    Max occurrences (optional)
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                    value={repeatOccurrences}
+                    onChange={(e) => setRepeatOccurrences(e.target.value)}
+                    placeholder="e.g. 12"
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+        )}
 
         <label className="flex items-center gap-2 text-sm text-white/80">
           <input
@@ -445,8 +552,8 @@ export default function AdminEventsPage() {
           {loading
             ? "Saving..."
             : mode === "create"
-              ? "Create event/workshop"
-              : "Update event/workshop"}
+              ? "Create event/workshop/class"
+              : "Update event/workshop/class"}
         </button>
 
         {(error || parsedAbout.error) && (

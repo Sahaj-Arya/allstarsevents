@@ -31,6 +31,17 @@ const eventSchema = new mongoose.Schema(
       enum: ["event", "workshop", "class"],
       default: "event",
     },
+    repeat: {
+      enabled: { type: Boolean, default: false },
+      frequency: {
+        type: String,
+        enum: ["none", "daily", "weekly", "monthly"],
+        default: "none",
+      },
+      interval: { type: Number, min: 1, default: 1 },
+      until: { type: String, default: "" },
+      occurrences: { type: Number, min: 1, default: null },
+    },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true },

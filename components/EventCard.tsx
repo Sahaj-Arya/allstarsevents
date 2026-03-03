@@ -35,6 +35,12 @@ export function EventCard({ event }: { event: EventItem }) {
   const mapsUrl = event.location;
 
   const isActive = event.isActive !== false;
+  const typeLabel =
+    event.type === "class"
+      ? "Class"
+      : event.type === "workshop"
+        ? "Workshop"
+        : "Event";
 
   return (
     <div
@@ -79,7 +85,7 @@ export function EventCard({ event }: { event: EventItem }) {
       </div>
       <div className="flex flex-1 flex-col gap-2 p-5 text-white">
         <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-white/60">
-          <span>{event.type}</span>
+          <span>{typeLabel}</span>
           <span className="h-px flex-1 bg-white/15" />
           <span>
             {event.date} | {event?.time}

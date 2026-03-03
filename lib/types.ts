@@ -1,4 +1,14 @@
-export type EventType = "event" | "workshop";
+export type EventType = "event" | "workshop" | "class";
+
+export type EventRepeatFrequency = "none" | "daily" | "weekly" | "monthly";
+
+export type EventRepeatConfig = {
+  enabled: boolean;
+  frequency: EventRepeatFrequency;
+  interval: number;
+  until?: string;
+  occurrences?: number | null;
+};
 
 export type EventAboutSection = {
   title: string;
@@ -24,6 +34,7 @@ export type EventItem = {
   time: string;
   location: string;
   type: EventType;
+  repeat?: EventRepeatConfig;
   isActive?: boolean;
 };
 
