@@ -206,5 +206,7 @@ export async function trackOtpSent() {
  */
 export async function sendTicketViaSms(phone, ticketId, bookingType = "event") {
   const message = getTypedTicketMessage(ticketId, bookingType);
+  const ticketSmsUrl = buildSmsUrl(phone, message);
+  console.log("📨 Ticket SMS URL:", ticketSmsUrl);
   return await sendOtpViaSms(phone, message);
 }
