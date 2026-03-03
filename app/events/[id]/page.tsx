@@ -20,10 +20,10 @@ export async function generateMetadata({
     };
   }
 
-  const media = event.media?.length
-    ? event.media
-    : event.images?.length
-      ? event.images
+  const media = event.images?.length
+    ? event.images
+    : event.media?.length
+      ? event.media
       : event.photo
         ? [event.photo]
         : [];
@@ -65,19 +65,21 @@ export default async function EventDetailsPage({
   const event = await fetchEventById(id);
   if (!event) notFound();
 
-  const media = event.media?.length
-    ? event.media
-    : event.images?.length
-      ? event.images
+  const media = event.images?.length
+    ? event.images
+    : event.media?.length
+      ? event.media
       : event.photo
         ? [event.photo]
         : [];
 
   const hero = media[0] || event.photo || "";
+  const heroIsVideo = Boolean(hero) && isVideoUrl(hero);
   const bgImage = (() => {
-    if (!isVideoUrl(hero)) return null;
-    const second = media[1] || event.photo || "";
-    return second && !isVideoUrl(second) ? second : null;
+    if (!heroIsVideo) return hero || null;
+    const secondImage = media.slice(1).find((item) => !isVideoUrl(item));
+    if (secondImage) return secondImage;
+    return event.photo && !isVideoUrl(event.photo) ? event.photo : null;
   })();
   const venue = event.venue || event.placename || event.location;
   const category = event.category || event.type;
@@ -132,33 +134,35 @@ export default async function EventDetailsPage({
             </div>
           </div>
           <div className="overflow-hidden rounded-[12] border border-white/10 bg-black/10 backdrop-blur-xs shadow-2xl p-2">
-            {hero ? (
-              isVideoUrl(hero) ? (
-                <video
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  className="w-full object-cover rounded-[10px] h-[220]"
-                  poster={event.photo || undefined}
-                  preload="auto"
-                  aria-hidden="true"
-                  tabIndex={-1}
-                >
-                  <source src={hero} />
-                </video>
+            <div className="relative h-[220px] w-full overflow-hidden rounded-[10px] bg-black/40 sm:h-[360px]">
+              {hero ? (
+                heroIsVideo ? (
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="h-full w-full object-cover"
+                    poster={event.photo || undefined}
+                    preload="auto"
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  >
+                    <source src={hero} />
+                  </video>
+                ) : (
+                  <Image
+                    src={hero}
+                    alt={event.title}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                )
               ) : (
-                <Image
-                  src={hero}
-                  alt={event.title}
-                  fill
-                  className="object-cover rounded-[12]"
-                  priority
-                />
-              )
-            ) : (
-              <div className="h-full w-full bg-gradient-to-br from-slate-800 via-black to-slate-900" />
-            )}
+                <div className="h-full w-full bg-gradient-to-br from-slate-800 via-black to-slate-900" />
+              )}
+            </div>
             <div className="mt-4">
               {/* <div className="rounded-3xl border border-white/20 bg-black/40 p-6 backdrop-blur-md shadow-2xl"> */}
               <p className="text-xs uppercase tracking-[0.2em] text-white/70">
