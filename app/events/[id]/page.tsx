@@ -230,7 +230,7 @@ export default async function EventDetailsPage({
                   {media.slice(2).map((item, idx) => (
                     <div
                       key={`${item}-${idx}`}
-                      className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/30"
+                      className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/30 aspect-video"
                     >
                       {isVideoUrl(item) ? (
                         <video
