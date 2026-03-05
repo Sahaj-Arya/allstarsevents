@@ -25,17 +25,7 @@ export function getOtpMessage(code, brandName = OTP_CONFIG.BRAND) {
  * @returns {string} Formatted ticket message with QR
  */
 export function getTicketMessage(ticketId) {
-  return getTypedTicketMessage(ticketId, "event");
-}
-
-export function getTypedTicketMessage(ticketId, bookingType = "event") {
-  const label = bookingType === "workshop" ? "workshop pass" : "event ticket";
-  const intro =
-    bookingType === "workshop"
-      ? "Your workshop pass is ready."
-      : "Your event ticket is ready.";
-  const message = `${intro}\nhttps://www.allstarsstudio.in/ticket/${ticketId}\nPlease show this ${label} link (QR) at the entry. ${OTP_CONFIG.FOOTER}`;
-  return encodeURIComponent(message);
+  return `Your%20ticket%20is%20ready.%0Ahttps%3A%2F%2Fwww.allstarsstudio.in%2Fticket%2F${ticketId}%0APlease%20show%20this%20ticket%20link%20%28QR%29%20at%20the%20entry.%20OAVPL`;
 }
 
 /**
@@ -111,7 +101,6 @@ export async function createOtpRequest(phone, code) {
  */
 export function buildSmsUrl(phone, message) {
   const config = getSmsProviderConfig();
-  const encodedMessage = encodeURIComponent(message || "");
 
   return (
     OTP_CONFIG.SMS_PROVIDER +
@@ -119,50 +108,9 @@ export function buildSmsUrl(phone, message) {
     `&pass=${config.password}` +
     `&send=${config.sender}` +
     `&dest=${phone}` +
-    `&msg=${encodedMessage}` +
+    `&msg=${message}` +
     `&priority=1`
   );
-}
-
-function normalizeSmsPhone(phone) {
-  const raw = String(phone || "").trim();
-  const digits = raw.replace(/\D/g, "");
-
-  if (digits.length === 11 && digits.startsWith("0")) {
-    return digits.slice(1);
-  }
-
-  if (digits.length === 12 && digits.startsWith("91")) {
-    return digits;
-  }
-
-  if (digits.length === 10) {
-    return digits;
-  }
-
-  return digits || raw;
-}
-
-function isSmsProviderFailure(responseText) {
-  const text = String(responseText || "").toLowerCase();
-  if (!text) return false;
-
-  const failureHints = [
-    "invalid",
-    "error",
-    "failed",
-    "failure",
-    "denied",
-    "not allowed",
-    "not permitted",
-    "unauthorized",
-    "insufficient",
-    "dlt",
-    "template",
-    "blocked",
-  ];
-
-  return failureHints.some((hint) => text.includes(hint));
 }
 
 /**
@@ -178,31 +126,14 @@ export async function sendOtpViaSms(phone, message) {
     throw new Error("SMS provider not configured");
   }
 
-  const destination = normalizeSmsPhone(phone);
-  if (!destination) {
-    throw new Error("Invalid destination phone number");
-  }
-
-  const url = buildSmsUrl(destination, message);
-  const redactedUrl = url.replace(/([?&]pass=)[^&]*/i, "$1***");
-  console.log("📨 SMS Request URL:", redactedUrl);
-  console.log("📨 SMS Destination:", {
-    rawPhone: phone,
-    normalizedPhone: destination,
-  });
+  const url = buildSmsUrl(phone, message);
+  //   console.log(url, "sms");
 
   const response = await fetch(url);
-  const responseText = await response.text();
-  console.log("📨 SMS Response:", response.status, responseText);
+  //   console.log(response, "res");
 
   if (!response.ok) {
-    throw new Error(
-      `Failed to send OTP via SMS: ${response.status} ${responseText}`,
-    );
-  }
-
-  if (isSmsProviderFailure(responseText)) {
-    throw new Error(`SMS provider rejected request: ${responseText}`);
+    throw new Error("Failed to send OTP via SMS");
   }
 
   return true;
@@ -263,9 +194,9 @@ export async function trackOtpSent() {
  * @param {string} ticketId - Ticket ID
  * @returns {Promise<boolean>} Success status
  */
-export async function sendTicketViaSms(phone, ticketId, bookingType = "event") {
-  const message = getTypedTicketMessage(ticketId, bookingType);
-  const ticketSmsUrl = buildSmsUrl(phone, message);
-  console.log("📨 Ticket SMS URL:", ticketSmsUrl);
+export async function sendTicketViaSms(phone, ticketId) {
+  const message = getTicketMessage(ticketId);
+  console.log(message, "OTP");
+
   return await sendOtpViaSms(phone, message);
 }
