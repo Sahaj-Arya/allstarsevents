@@ -93,9 +93,16 @@ export async function fetchShareableTicket(
   token: string,
 ): Promise<{ booking: Booking; focusTicketId: string | null } | null> {
   try {
-    const res = await fetch(`${API_BASE_URL}/tickets/share/${token}`, {
-      cache: "no-store",
-    });
+    const normalizedToken = String(token || "")
+      .trim()
+      .replace(/^\{+|\}+$/g, "");
+
+    const res = await fetch(
+      `${API_BASE_URL}/tickets/share/${encodeURIComponent(normalizedToken)}`,
+      {
+        cache: "no-store",
+      },
+    );
     if (!res.ok) {
       fireAlert("error", "Failed to load shared ticket");
       return null;

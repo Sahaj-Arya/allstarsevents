@@ -9,6 +9,14 @@ export const OTP_CONFIG = {
   FOOTER: "OAVPL",
 };
 
+const SMS_REJECTION_KEYWORDS = [
+  "error",
+  "invalid",
+  "reject",
+  "failed",
+  "not match",
+];
+
 /**
  * Get OTP message template
  * @param {string} code - OTP code
@@ -21,11 +29,11 @@ export function getOtpMessage(code, brandName = OTP_CONFIG.BRAND) {
 
 /**
  * Get ticket message template
- * @param {string} ticketId - Ticket ID
+ * @param {string} ticketToken - Ticket placeholder or ticket ID
  * @returns {string} Formatted ticket message with QR
  */
-export function getTicketMessage(ticketId) {
-  return `Your%20ticket%20is%20ready.%0Ahttps%3A%2F%2Fwww.allstarsstudio.in%2Fticket%2F${ticketId}%0APlease%20show%20this%20ticket%20link%20%28QR%29%20at%20the%20entry.%20OAVPL`;
+export function getTicketMessage(ticketToken) {
+  return `Your ticket is ready.\nhttps://www.allstarsstudio.in/ticket/{${ticketToken}}\nPlease show this ticket link (QR) at the entry. ${OTP_CONFIG.FOOTER}`;
 }
 
 /**
@@ -99,18 +107,54 @@ export async function createOtpRequest(phone, code) {
  * @param {string} message - Message to send
  * @returns {string} Complete SMS API URL
  */
-export function buildSmsUrl(phone, message) {
+export function buildSmsUrl(phone, message, extraParams = {}) {
   const config = getSmsProviderConfig();
+  const url = new URL(OTP_CONFIG.SMS_PROVIDER);
 
-  return (
-    OTP_CONFIG.SMS_PROVIDER +
-    `?uname=${config.username}` +
-    `&pass=${config.password}` +
-    `&send=${config.sender}` +
-    `&dest=${phone}` +
-    `&msg=${message}` +
-    `&priority=1`
-  );
+  url.searchParams.set("uname", config.username || "");
+  url.searchParams.set("pass", config.password || "");
+  url.searchParams.set("send", config.sender || "");
+  url.searchParams.set("dest", String(phone || ""));
+  url.searchParams.set("msg", String(message || ""));
+  url.searchParams.set("priority", "1");
+
+  if (extraParams.templateId) {
+    url.searchParams.set("tempid", String(extraParams.templateId));
+  }
+
+  if (extraParams.entityId) {
+    url.searchParams.set("peid", String(extraParams.entityId));
+  }
+
+  if (Array.isArray(extraParams.vars)) {
+    const useSingleVarParam = extraParams.varParamStyle === "single";
+    extraParams.vars.forEach((value, index) => {
+      if (value !== undefined && value !== null && value !== "") {
+        const key = useSingleVarParam ? "var" : `var${index + 1}`;
+        url.searchParams.set(key, String(value));
+      }
+    });
+  }
+
+  return url.toString();
+}
+
+function maskPhone(phone) {
+  const value = String(phone || "");
+  if (value.length <= 4) return value;
+  return `${"*".repeat(Math.max(0, value.length - 4))}${value.slice(-4)}`;
+}
+
+function sanitizeSmsUrl(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.searchParams.has("pass")) {
+      parsed.searchParams.set("pass", "***");
+    }
+    return parsed.toString();
+  } catch {
+    return "invalid-url";
+  }
 }
 
 /**
@@ -119,20 +163,95 @@ export function buildSmsUrl(phone, message) {
  * @param {string} message - Message to send
  * @returns {Promise<boolean>} Success status
  */
-export async function sendOtpViaSms(phone, message) {
+export async function sendOtpViaSms(phone, message, meta = {}) {
   const config = getSmsProviderConfig();
 
   if (!config.username || !config.password || !config.sender) {
     throw new Error("SMS provider not configured");
   }
 
-  const url = buildSmsUrl(phone, message);
-  //   console.log(url, "sms");
+  const buildMeta = (varParamStyle = "indexed") => ({
+    templateId: meta.templateId,
+    entityId: meta.entityId,
+    vars: meta.vars,
+    varParamStyle,
+  });
+  const url = buildSmsUrl(phone, message, buildMeta());
+  const isTicketSms = meta?.type === "ticket";
+
+  if (isTicketSms) {
+    console.info("[SMS][ticket] Sending ticket SMS", {
+      ticketId: meta.ticketId || null,
+      phone: maskPhone(phone),
+      smsUrl: sanitizeSmsUrl(url),
+    });
+  }
 
   const response = await fetch(url);
-  //   console.log(response, "res");
+  const responseText = await response.text();
+  const isRejectedByBody = SMS_REJECTION_KEYWORDS.some((keyword) =>
+    responseText.toLowerCase().includes(keyword),
+  );
+
+  if (isTicketSms) {
+    console.info("[SMS][ticket] Provider response", {
+      ticketId: meta.ticketId || null,
+      status: response.status,
+      ok: response.ok,
+      body: responseText.slice(0, 300),
+    });
+  }
+
+  if (isTicketSms && isRejectedByBody) {
+    const canRetryWithSingleVar =
+      Array.isArray(meta.vars) &&
+      meta.vars.length > 0 &&
+      meta.varParamStyle !== "single";
+
+    if (canRetryWithSingleVar) {
+      const retryUrl = buildSmsUrl(phone, message, buildMeta("single"));
+      console.warn("[SMS][ticket] Retrying with single var parameter", {
+        ticketId: meta.ticketId || null,
+        phone: maskPhone(phone),
+        smsUrl: sanitizeSmsUrl(retryUrl),
+      });
+
+      const retryResponse = await fetch(retryUrl);
+      const retryText = await retryResponse.text();
+      const retryRejected = SMS_REJECTION_KEYWORDS.some((keyword) =>
+        retryText.toLowerCase().includes(keyword),
+      );
+
+      console.info("[SMS][ticket] Retry provider response", {
+        ticketId: meta.ticketId || null,
+        status: retryResponse.status,
+        ok: retryResponse.ok,
+        body: retryText.slice(0, 300),
+      });
+
+      if (retryResponse.ok && !retryRejected) {
+        return true;
+      }
+
+      throw new Error(
+        `Ticket SMS rejected by provider: ${retryText.slice(0, 200)}`,
+      );
+    }
+
+    throw new Error(
+      `Ticket SMS rejected by provider: ${responseText.slice(0, 200)}`,
+    );
+  }
 
   if (!response.ok) {
+    if (isTicketSms) {
+      console.error("[SMS][ticket] Ticket SMS failed", {
+        ticketId: meta.ticketId || null,
+        phone: maskPhone(phone),
+        status: response.status,
+        body: responseText.slice(0, 300),
+      });
+    }
     throw new Error("Failed to send OTP via SMS");
   }
 
@@ -194,9 +313,57 @@ export async function trackOtpSent() {
  * @param {string} ticketId - Ticket ID
  * @returns {Promise<boolean>} Success status
  */
-export async function sendTicketViaSms(phone, ticketId) {
-  const message = getTicketMessage(ticketId);
-  console.log(message, "OTP");
+function resolveTicketTemplateId(templateType = "event") {
+  const normalizedType = templateType === "workshop" ? "workshop" : "event";
 
-  return await sendOtpViaSms(phone, message);
+  if (normalizedType === "workshop") {
+    return (
+      process.env.SMS_TICKET_WORKSHOP_TEMPLATE_ID ||
+      process.env.SMS_TICKET_TEMPLATE_ID_WORKSHOP ||
+      process.env.SMS_TICKET_TEMPLATE_ID ||
+      null
+    );
+  }
+
+  return (
+    process.env.SMS_TICKET_EVENT_TEMPLATE_ID ||
+    process.env.SMS_TICKET_TEMPLATE_ID_EVENT ||
+    process.env.SMS_TICKET_TEMPLATE_ID ||
+    null
+  );
+}
+
+export async function sendTicketViaSms(
+  phone,
+  ticketId,
+  templateType = "event",
+) {
+  const useDltTemplate = process.env.SMS_TICKET_USE_DLT === "true";
+  const templateId = useDltTemplate
+    ? resolveTicketTemplateId(templateType)
+    : null;
+  const entityId = useDltTemplate
+    ? process.env.SMS_ENTITY_ID || process.env.SMS_PEID || process.env.SMS_PE_ID
+    : null;
+  const message = getTicketMessage(ticketId);
+  const vars = useDltTemplate ? [ticketId] : [];
+
+  console.info("[SMS][ticket] Prepared ticket message", {
+    ticketId,
+    templateType,
+    useDltTemplate,
+    phone: maskPhone(phone),
+    templateId,
+    entityId,
+    vars,
+    message: message.slice(0, 300),
+  });
+
+  return await sendOtpViaSms(phone, message, {
+    type: "ticket",
+    ticketId,
+    templateId,
+    entityId,
+    vars,
+  });
 }

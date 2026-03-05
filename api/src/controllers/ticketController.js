@@ -3,6 +3,20 @@ import { Booking } from "../models/Booking.js";
 import { User } from "../models/User.js";
 import Ticket from "../models/Ticket.js";
 
+function normalizeTicketToken(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  let decoded = raw;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    // ignore malformed URI sequences
+  }
+
+  return decoded.replace(/^\{+|\}+$/g, "").trim();
+}
+
 async function enrichBooking(booking) {
   const tickets = await Ticket.find({ booking: booking._id })
     .sort({ createdAt: 1 })
@@ -100,7 +114,7 @@ export async function getTickets(req, res) {
 
 export async function getShareableTicket(req, res) {
   try {
-    const token = req.params.token;
+    const token = normalizeTicketToken(req.params.token);
 
     let focusTicketId = null;
 
@@ -130,7 +144,7 @@ export async function searchTickets(req, res) {
     const { phone, token, ticketId } = req.query;
 
     if (token || ticketId) {
-      const lookupToken = token || ticketId;
+      const lookupToken = normalizeTicketToken(token || ticketId);
       let focusTicketId = null;
 
       let booking = await Booking.findOne({ ticketToken: lookupToken });
@@ -178,7 +192,10 @@ export async function listTickets(req, res) {
         .limit(limit)
         .populate("user", "name phone")
         .populate("booking", "phone ticketToken")
-        .populate("event", "venue placename location title date time price photo"),
+        .populate(
+          "event",
+          "venue placename location title date time price photo",
+        ),
       Ticket.countDocuments(),
     ]);
 
@@ -251,7 +268,7 @@ export async function validateTicket(req, res) {
       return trimmed;
     };
 
-    const normalizedToken = normalizeToken(token);
+    const normalizedToken = normalizeTicketToken(normalizeToken(token));
     if (!normalizedToken)
       return res.status(400).json({ error: "token required" });
 
@@ -263,7 +280,10 @@ export async function validateTicket(req, res) {
           select: "phone ticketToken user",
           populate: { path: "user", select: "name phone email" },
         })
-        .populate("event", "venue placename location title date time price photo");
+        .populate(
+          "event",
+          "venue placename location title date time price photo",
+        );
       if (!ticket) return res.status(404).json({ error: "Ticket not found" });
       ticket.venue =
         ticket.venue ||

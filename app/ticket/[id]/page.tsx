@@ -13,7 +13,19 @@ import {
 
 export default function TicketPage() {
   const params = useParams<{ id: string }>();
-  const token = params?.id;
+  const token = useMemo(() => {
+    const raw = String(params?.id || "").trim();
+    if (!raw) return "";
+
+    let decoded = raw;
+    try {
+      decoded = decodeURIComponent(raw);
+    } catch {
+      // ignore malformed URI sequences
+    }
+
+    return decoded.replace(/^\{+|\}+$/g, "").trim();
+  }, [params?.id]);
   const { bookings } = useCart();
   const [remoteBooking, setRemoteBooking] = useState<
     (typeof bookings)[0] | null
