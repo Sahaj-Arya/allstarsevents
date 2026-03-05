@@ -166,6 +166,8 @@ export function createPaymentController(razorpay) {
             eventDoc.placename || eventDoc.venue || eventDoc.location;
           const location = eventDoc.location || cartItem.location || "";
           const title = eventDoc.title || cartItem.title;
+          const photo =
+            eventDoc.photo || eventDoc.images?.[0] || eventDoc.media?.[0] || "";
           const price = Number(eventDoc.price ?? cartItem.price ?? 0);
           const date = eventDoc.date || cartItem.date;
           const time = eventDoc.time || cartItem.time;
@@ -176,6 +178,7 @@ export function createPaymentController(razorpay) {
               booking: booking._id,
               eventId: cartItem.eventId,
               title,
+              photo,
               price,
               date,
               time,
@@ -376,6 +379,8 @@ export function createPaymentController(razorpay) {
             eventDoc.placename || eventDoc.venue || eventDoc.location;
           const location = eventDoc.location || cartItem.location || "";
           const title = eventDoc.title || cartItem.title;
+          const photo =
+            eventDoc.photo || eventDoc.images?.[0] || eventDoc.media?.[0] || "";
           const price = Number(eventDoc.price ?? cartItem.price ?? 0);
           const date = eventDoc.date || cartItem.date;
           const time = eventDoc.time || cartItem.time;
@@ -387,6 +392,7 @@ export function createPaymentController(razorpay) {
               booking: booking._id,
               eventId: cartItem.eventId,
               title,
+              photo,
               price,
               date,
               time,

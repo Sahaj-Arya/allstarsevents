@@ -6,7 +6,7 @@ import Ticket from "../models/Ticket.js";
 async function enrichBooking(booking) {
   const tickets = await Ticket.find({ booking: booking._id })
     .sort({ createdAt: 1 })
-    .populate("event", "venue placename location title date time price");
+    .populate("event", "venue placename location title date time price photo");
 
   const ticketList = tickets.map((t) => {
     const venue = t.venue || t.event?.venue || t.event?.placename || t.location;
@@ -17,6 +17,7 @@ async function enrichBooking(booking) {
       id: t._id.toString(),
       eventId: t.eventId,
       title: t.title || t.event?.title,
+      photo: t.photo || t.event?.photo || "",
       price: t.price ?? t.event?.price,
       date: t.date || t.event?.date,
       time: t.time || t.event?.time,
@@ -37,6 +38,7 @@ async function enrichBooking(booking) {
       t.placename || t.event?.placename || t.event?.venue || t.location;
     const location = t.location || t.event?.location || "";
     const title = t.title || t.event?.title;
+    const photo = t.photo || t.event?.photo || "";
     const price = t.price ?? t.event?.price;
     const date = t.date || t.event?.date;
     const time = t.time || t.event?.time;
@@ -54,6 +56,7 @@ async function enrichBooking(booking) {
     const existing = grouped.get(key) || {
       eventId: t.eventId,
       title,
+      photo,
       price,
       quantity: 0,
       date,
@@ -175,7 +178,7 @@ export async function listTickets(req, res) {
         .limit(limit)
         .populate("user", "name phone")
         .populate("booking", "phone ticketToken")
-        .populate("event", "venue placename location title date time price"),
+        .populate("event", "venue placename location title date time price photo"),
       Ticket.countDocuments(),
     ]);
 
@@ -260,7 +263,7 @@ export async function validateTicket(req, res) {
           select: "phone ticketToken user",
           populate: { path: "user", select: "name phone email" },
         })
-        .populate("event", "venue placename location title date time price");
+        .populate("event", "venue placename location title date time price photo");
       if (!ticket) return res.status(404).json({ error: "Ticket not found" });
       ticket.venue =
         ticket.venue ||
@@ -298,7 +301,7 @@ export async function validateTicket(req, res) {
 
     const tickets = await Ticket.find({ booking: booking._id }).populate(
       "event",
-      "venue placename location title date time price",
+      "venue placename location title date time price photo",
     );
     if (tickets.length === 0) {
       return res.status(404).json({ error: "No tickets for booking" });
@@ -340,7 +343,7 @@ export async function validateTicket(req, res) {
 
     const updated = await Ticket.find({ booking: booking._id }).populate(
       "event",
-      "venue placename location title date time price",
+      "venue placename location title date time price photo",
     );
     for (const ticket of updated) {
       ticket.venue =

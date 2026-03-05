@@ -111,6 +111,7 @@ export async function createOtpRequest(phone, code) {
  */
 export function buildSmsUrl(phone, message) {
   const config = getSmsProviderConfig();
+  const encodedMessage = encodeURIComponent(message || "");
 
   return (
     OTP_CONFIG.SMS_PROVIDER +
@@ -118,9 +119,50 @@ export function buildSmsUrl(phone, message) {
     `&pass=${config.password}` +
     `&send=${config.sender}` +
     `&dest=${phone}` +
-    `&msg=${message}` +
+    `&msg=${encodedMessage}` +
     `&priority=1`
   );
+}
+
+function normalizeSmsPhone(phone) {
+  const raw = String(phone || "").trim();
+  const digits = raw.replace(/\D/g, "");
+
+  if (digits.length === 11 && digits.startsWith("0")) {
+    return digits.slice(1);
+  }
+
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return digits;
+  }
+
+  if (digits.length === 10) {
+    return digits;
+  }
+
+  return digits || raw;
+}
+
+function isSmsProviderFailure(responseText) {
+  const text = String(responseText || "").toLowerCase();
+  if (!text) return false;
+
+  const failureHints = [
+    "invalid",
+    "error",
+    "failed",
+    "failure",
+    "denied",
+    "not allowed",
+    "not permitted",
+    "unauthorized",
+    "insufficient",
+    "dlt",
+    "template",
+    "blocked",
+  ];
+
+  return failureHints.some((hint) => text.includes(hint));
 }
 
 /**
@@ -136,14 +178,31 @@ export async function sendOtpViaSms(phone, message) {
     throw new Error("SMS provider not configured");
   }
 
-  const url = buildSmsUrl(phone, message);
-  //   console.log(url, "sms");
+  const destination = normalizeSmsPhone(phone);
+  if (!destination) {
+    throw new Error("Invalid destination phone number");
+  }
+
+  const url = buildSmsUrl(destination, message);
+  const redactedUrl = url.replace(/([?&]pass=)[^&]*/i, "$1***");
+  console.log("📨 SMS Request URL:", redactedUrl);
+  console.log("📨 SMS Destination:", {
+    rawPhone: phone,
+    normalizedPhone: destination,
+  });
 
   const response = await fetch(url);
-  //   console.log(response, "res");
+  const responseText = await response.text();
+  console.log("📨 SMS Response:", response.status, responseText);
 
   if (!response.ok) {
-    throw new Error("Failed to send OTP via SMS");
+    throw new Error(
+      `Failed to send OTP via SMS: ${response.status} ${responseText}`,
+    );
+  }
+
+  if (isSmsProviderFailure(responseText)) {
+    throw new Error(`SMS provider rejected request: ${responseText}`);
   }
 
   return true;
