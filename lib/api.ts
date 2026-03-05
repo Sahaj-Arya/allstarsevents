@@ -560,15 +560,21 @@ export async function validateTicket(ticketToken: string) {
   return data;
 }
 
-export async function fetchUserByPhone(phone: string) {
+export async function fetchUserByPhone(
+  phone: string,
+  options?: { silent?: boolean },
+) {
   if (!phone) return { user: null, error: "phone required", status: 400 };
+  const silent = Boolean(options?.silent);
   try {
     const res = await fetch(
       `${API_BASE_URL}/auth/user-by-phone?phone=${encodeURIComponent(phone)}`,
     );
     const data = await res.json();
     if (!res.ok) {
-      fireAlert("error", data.error || "Unknown error");
+      if (!silent) {
+        fireAlert("error", data.error || "Unknown error");
+      }
       return {
         user: null,
         error: data.error || "Unknown error",
@@ -579,7 +585,9 @@ export async function fetchUserByPhone(phone: string) {
     return { user: data.user || null, error: null, status: res.status };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Network error";
-    fireAlert("error", message);
+    if (!silent) {
+      fireAlert("error", message);
+    }
     return { user: null, error: message, status: 500 };
   }
 }

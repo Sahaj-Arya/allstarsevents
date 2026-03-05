@@ -4,7 +4,12 @@ import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "../../lib/cart-context";
-import { fetchEventById, fetchTickets, getPaymentMode } from "../../lib/api";
+import {
+  fetchEventById,
+  fetchTickets,
+  fetchUserByPhone,
+  getPaymentMode,
+} from "../../lib/api";
 import { startCheckout } from "../../lib/payment";
 import { CartItem, EventItem, UserProfile } from "../../lib/types";
 import { Button } from "../../components/ui/Button";
@@ -117,8 +122,27 @@ function CheckoutContent() {
   const handleAuthSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const requestIdToUse = otpRequestId || "bypass";
+    if (!modalPhone || modalPhone.length !== 10) {
+      setError("Enter a valid 10-digit phone number");
+      return;
+    }
     if (!otpRequestId) {
       setError("Send OTP first");
+      return;
+    }
+    if (!otp || otp.length !== 6) {
+      setError("Enter valid 6-digit OTP");
+      return;
+    }
+    if (showNameEmail && (!modalName.trim() || !modalEmail.trim())) {
+      setError("Name and email are required for new users");
+      return;
+    }
+    if (
+      showNameEmail &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(modalEmail.trim())
+    ) {
+      setError("Enter a valid email address");
       return;
     }
     setOtpLoading(true);
@@ -133,6 +157,7 @@ function CheckoutContent() {
       // If error indicates user does not exist, show name/email fields
       if (
         verified.error === "USER_NOT_FOUND" ||
+        verified.error === "USER_DETAILS_REQUIRED" ||
         (verified.error && verified.error.toLowerCase().includes("not found"))
       ) {
         setShowNameEmail(true);
@@ -160,6 +185,19 @@ function CheckoutContent() {
   const adjustQuantity = (next: number) => {
     setQuantity(Math.max(1, next));
   };
+
+  const isPhoneValid = modalPhone.length === 10;
+  const isOtpValid = otp.length === 6;
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(modalEmail.trim());
+  const isNameValid = modalName.trim().length > 0;
+  const isNewUserDetailsValid = !showNameEmail || (isNameValid && isEmailValid);
+  const canVerifyAndPay =
+    isPhoneValid &&
+    Boolean(otpRequestId) &&
+    isOtpValid &&
+    isNewUserDetailsValid &&
+    !otpLoading &&
+    !loading;
 
   const eventSlug = event?.id || event?._id || "";
 
@@ -326,6 +364,8 @@ function CheckoutContent() {
                   <InputField
                     label="Email"
                     type="email"
+                    required
+                    requiredMark
                     value={modalEmail}
                     onChange={(e) => setModalEmail(e.target.value)}
                     placeholder="you@example.com"
@@ -339,11 +379,23 @@ function CheckoutContent() {
                   fullWidth
                   onClick={async () => {
                     setOtpStatus(null);
+                    setError(null);
                     setOtpLoading(true);
+                    const lookup = await fetchUserByPhone(modalPhone, {
+                      silent: true,
+                    });
+                    const isNewUser = !lookup.user && lookup.status === 404;
+                    setShowNameEmail(isNewUser);
+
                     const reqId = await sendOtp(modalPhone);
                     setOtpLoading(false);
                     if (reqId) {
                       setOtpRequestId(reqId);
+                      setOtpStatus(
+                        isNewUser
+                          ? "OTP sent. Enter name and email to continue signup."
+                          : "OTP sent",
+                      );
                       // if (BYPASS_OTP) setOtp(STATIC_OTP);
                       // setOtpStatus(
                       //   BYPASS_OTP
@@ -355,7 +407,7 @@ function CheckoutContent() {
                     }
                   }}
                   disabled={otpLoading || !modalPhone}
-> 
+                >
                   {otpLoading ? (
                     <span className="inline-flex items-center gap-2">
                       <Spinner size={14} />
@@ -387,7 +439,7 @@ function CheckoutContent() {
                     }
                   }}
                   disabled={otpLoading || !modalPhone}
-> 
+                >
                   {otpLoading ? (
                     <span className="inline-flex items-center gap-2">
                       <Spinner size={12} />
@@ -425,20 +477,22 @@ function CheckoutContent() {
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  fullWidth
-                  disabled={loading || otpLoading}
-                >
-                  {loading ? (
-                    <span className="inline-flex items-center gap-2">
-                      <Spinner size={16} />
-                      <span>Processing...</span>
-                    </span>
-                  ) : (
-                    "Verify & Pay"
-                  )}
-                </Button>
+                {canVerifyAndPay ? (
+                  <Button type="submit" fullWidth>
+                    {loading ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Spinner size={16} />
+                        <span>Processing...</span>
+                      </span>
+                    ) : (
+                      "Verify & Pay"
+                    )}
+                  </Button>
+                ) : (
+                  <div className="flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/50">
+                    Fill required fields to continue
+                  </div>
+                )}
               </div>
             </form>
           </div>

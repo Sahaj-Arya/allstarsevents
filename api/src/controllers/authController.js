@@ -54,6 +54,15 @@ export async function verifyOtp(req, res) {
   }
 
   try {
+    const existingUser = await User.findOne({ phone });
+
+    if (!existingUser && (!name || !email)) {
+      return res.status(400).json({
+        error: "USER_DETAILS_REQUIRED",
+        message: "name and email required for new user",
+      });
+    }
+
     // Check if static OTP (for dev/test)
     if (otp === staticOtp) {
       const user = await upsertUser(phone, { name, email });
