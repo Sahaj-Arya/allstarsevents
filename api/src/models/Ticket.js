@@ -18,6 +18,7 @@ const ticketSchema = new mongoose.Schema({
   },
   eventId: String,
   title: String,
+  photo: String,
   price: Number,
   date: String,
   time: String,

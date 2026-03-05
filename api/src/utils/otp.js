@@ -25,7 +25,7 @@ export function getOtpMessage(code, brandName = OTP_CONFIG.BRAND) {
  * @returns {string} Formatted ticket message with QR
  */
 export function getTicketMessage(ticketId) {
-  return `Your%20ticket%20is%20ready.%0Ahttps%3A%2F%2Fwww.allstarsstudio.in%2Fticket%2F${ticketId}%0APlease%20show%20this%20ticket%20link%20%28QR%29%20at%20the%20entry.%20OAVPL`;
+  return `Your ticket is ready.\nhttps://www.allstarsstudio.in/ticket/${ticketId}\nPlease show this ticket link (QR) at the entry. OAVPL`;
 }
 
 /**
@@ -101,6 +101,7 @@ export async function createOtpRequest(phone, code) {
  */
 export function buildSmsUrl(phone, message) {
   const config = getSmsProviderConfig();
+  const encodedMessage = encodeURIComponent(message || "");
 
   return (
     OTP_CONFIG.SMS_PROVIDER +
@@ -108,9 +109,50 @@ export function buildSmsUrl(phone, message) {
     `&pass=${config.password}` +
     `&send=${config.sender}` +
     `&dest=${phone}` +
-    `&msg=${message}` +
+    `&msg=${encodedMessage}` +
     `&priority=1`
   );
+}
+
+function normalizeSmsPhone(phone) {
+  const raw = String(phone || "").trim();
+  const digits = raw.replace(/\D/g, "");
+
+  if (digits.length === 11 && digits.startsWith("0")) {
+    return digits.slice(1);
+  }
+
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return digits;
+  }
+
+  if (digits.length === 10) {
+    return digits;
+  }
+
+  return digits || raw;
+}
+
+function isSmsProviderFailure(responseText) {
+  const text = String(responseText || "").toLowerCase();
+  if (!text) return false;
+
+  const failureHints = [
+    "invalid",
+    "error",
+    "failed",
+    "failure",
+    "denied",
+    "not allowed",
+    "not permitted",
+    "unauthorized",
+    "insufficient",
+    "dlt",
+    "template",
+    "blocked",
+  ];
+
+  return failureHints.some((hint) => text.includes(hint));
 }
 
 /**
@@ -126,14 +168,28 @@ export async function sendOtpViaSms(phone, message) {
     throw new Error("SMS provider not configured");
   }
 
-  const url = buildSmsUrl(phone, message);
-  //   console.log(url, "sms");
+  const destination = normalizeSmsPhone(phone);
+  if (!destination) {
+    throw new Error("Invalid destination phone number");
+  }
+
+  const url = buildSmsUrl(destination, message);
+  const redactedUrl = url.replace(/([?&]pass=)[^&]*/i, "$1***");
+  console.log("📨 SMS Request URL:", redactedUrl);
+  console.log("📨 SMS Destination:", { rawPhone: phone, normalizedPhone: destination });
 
   const response = await fetch(url);
-  //   console.log(response, "res");
+  const responseText = await response.text();
+  console.log("📨 SMS Response:", response.status, responseText);
 
   if (!response.ok) {
-    throw new Error("Failed to send OTP via SMS");
+    throw new Error(
+      `Failed to send OTP via SMS: ${response.status} ${responseText}`,
+    );
+  }
+
+  if (isSmsProviderFailure(responseText)) {
+    throw new Error(`SMS provider rejected request: ${responseText}`);
   }
 
   return true;

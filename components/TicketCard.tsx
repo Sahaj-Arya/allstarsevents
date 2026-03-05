@@ -52,11 +52,24 @@ export function TicketItemCard({
   return (
     <TicketShell className="shrink-0 w-[260px] min-w-[260px] max-w-[320px] sm:w-[300px]">
       <div className="flex flex-col items-center w-full gap-1">
+        {item.event.photo ? (
+          <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-black/20">
+            <img
+              src={item.event.photo}
+              alt={item.event.title || "Event"}
+              className="h-28 w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        ) : null}
         <p className="text-base font-semibold text-white break-words text-center">
           {item.event.title}
         </p>
         <p className="text-sm text-white/70 text-center">
           {item.event.date} · {item.event.time}
+        </p>
+        <p className="text-sm text-white/70 text-center">
+          {item.event.venue || item.event.placename || ""}
         </p>
         <p className="text-sm text-white/70 break-words text-center">
           {item.event.location}
@@ -86,8 +99,10 @@ export function TicketInstanceCard({
   ticket: {
     id: string;
     title?: string;
+    photo?: string;
     date?: string;
     time?: string;
+    price?: number;
     location?: string;
     venue?: string;
     placename?: string;
@@ -137,6 +152,17 @@ export function TicketInstanceCard({
         </button>
       </div>
 
+      {ticket.photo ? (
+        <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-black/20">
+          <img
+            src={ticket.photo}
+            alt={ticket.title || "Event"}
+            className="h-28 w-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      ) : null}
+
       <div className="flex items-center justify-center rounded-xl border border-dashed border-white/15 bg-black/30 p-2 w-full">
         <QRCode
           value={ticket.id}
@@ -149,6 +175,9 @@ export function TicketInstanceCard({
       <p className="text-sm text-white/70 text-center">
         {ticket.date || ""}
         {ticket.time ? ` · ${ticket.time}` : ""}
+      </p>
+      <p className="text-sm text-white/80 text-center">
+        Booked at: ₹{ticket.price ?? 0}
       </p>
       <div
         className="rounded-2xl pt-2"
@@ -165,6 +194,9 @@ export function TicketInstanceCard({
           </p>
         </Link>
       </div>
+      <p className="text-sm text-white/70 text-center break-words">
+        {ticket.location || ""}
+      </p>
       {ticket.seat && (
         <p className="text-sm text-white/80">Seat: {ticket.seat}</p>
       )}
@@ -205,6 +237,16 @@ export function TicketCard({ booking }: { booking: Booking }) {
           <FaShareAlt />
         </button>
       </div>
+      {firstItem?.event.photo ? (
+        <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-black/20">
+          <img
+            src={firstItem.event.photo}
+            alt={firstItem.event.title || "Event"}
+            className="h-32 w-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      ) : null}
       <div className="flex items-center justify-center rounded-xl border border-dashed border-white/15 bg-black/30 p-4 w-full">
         <QRCode
           value={booking.ticketToken}
@@ -215,6 +257,9 @@ export function TicketCard({ booking }: { booking: Booking }) {
       </div>
       <p className="text-sm text-white/70 text-center">
         {firstItem?.event.date} · {firstItem?.event.time}
+      </p>
+      <p className="text-sm text-white/80 text-center">
+        Booked at: ₹{firstItem?.event.price ?? 0}
       </p>
       <div
         className="rounded-2xl pt-6"
@@ -233,6 +278,9 @@ export function TicketCard({ booking }: { booking: Booking }) {
       </div>
       <p className="text-sm text-white/70 text-center">
         {firstItem?.event.placename}
+      </p>
+      <p className="text-sm text-white/70 text-center break-words">
+        {firstItem?.event.location}
       </p>
       <p className="text-sm text-white/80 text-center">
         Tickets:{" "}

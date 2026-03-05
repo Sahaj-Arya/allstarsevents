@@ -37,6 +37,7 @@ export type Ticket = {
   id: string;
   eventId?: string;
   title?: string;
+  photo?: string;
   price?: number;
   date?: string;
   time?: string;

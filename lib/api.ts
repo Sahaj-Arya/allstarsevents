@@ -24,6 +24,7 @@ type ApiBooking = {
   cartItems?: Array<{
     eventId?: string;
     title?: string;
+    photo?: string;
     price?: number;
     quantity?: number;
     date?: string;
@@ -42,6 +43,7 @@ type ApiBooking = {
     id: string;
     eventId?: string;
     title?: string;
+    photo?: string;
     price?: number;
     date?: string;
     time?: string;
@@ -296,7 +298,7 @@ function mapBookingFromApi(api: ApiBooking): Booking {
       title: item.title || "Ticket",
       description: "",
       price: item.price || 0,
-      photo: "",
+      photo: item.photo || "",
       date: item.date || "",
       time: item.time || "",
       location: item.location || "",
@@ -316,6 +318,7 @@ function mapBookingFromApi(api: ApiBooking): Booking {
         id: t.id,
         eventId: t.eventId,
         title: t.title,
+        photo: t.photo,
         price: t.price,
         date: t.date,
         time: t.time,
@@ -417,6 +420,7 @@ export async function verifyPayment(params: {
         id?: string;
         eventId?: string;
         title?: string;
+        photo?: string;
         price?: number;
         date?: string;
         time?: string;
@@ -428,6 +432,7 @@ export async function verifyPayment(params: {
         id: t._id || t.id || "",
         eventId: t.eventId,
         title: t.title,
+        photo: t.photo,
         price: t.price,
         date: t.date,
         time: t.time,
