@@ -6,6 +6,42 @@ import { Booking } from "../lib/types";
 import { FaShareAlt, FaMapMarkerAlt } from "react-icons/fa";
 import Link from "next/link";
 
+function formatTicketTime(value?: string) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  const normalized = raw.toUpperCase().replace(/\s+/g, "");
+  const directMatch = normalized.match(/^(\d{1,2})(?::(\d{2}))?(AM|PM)$/);
+  if (directMatch) {
+    const hours = Number(directMatch[1]);
+    const suffix = directMatch[3];
+    if (Number.isFinite(hours) && hours >= 1 && hours <= 12) {
+      return `${hours}${suffix}`;
+    }
+  }
+
+  const hhmmMatch = raw.match(/^(\d{1,2}):(\d{2})$/);
+  if (hhmmMatch) {
+    const hours24 = Number(hhmmMatch[1]);
+    if (Number.isFinite(hours24) && hours24 >= 0 && hours24 <= 23) {
+      const suffix = hours24 >= 12 ? "PM" : "AM";
+      const hours12 = hours24 % 12 || 12;
+      return `${hours12}${suffix}`;
+    }
+  }
+
+  const parsed = new Date(`1970-01-01T${raw}`);
+  if (!Number.isNaN(parsed.getTime())) {
+    const formatted = parsed.toLocaleTimeString("en-IN", {
+      hour: "numeric",
+      hour12: true,
+    });
+    return formatted.replace(/\s+/g, "").toUpperCase();
+  }
+
+  return raw;
+}
+
 function TicketShell({
   children,
   className = "",
@@ -17,17 +53,6 @@ function TicketShell({
     <div
       className={`w-full max-w-[360px] rounded-2xl border border-white/10 shadow-sm backdrop-blur overflow-hidden bg-black ${className}`}
     >
-      <div className="relative w-full" style={{ height: 120 }}>
-        <img
-          src="/assets/ticket.png"
-          alt="Ticket"
-          className="h-full w-full object-contain select-none pointer-events-none"
-          draggable={false}
-        />
-        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-lg font-bold tracking-[0.4em] drop-shadow-lg uppercase">
-          {/* Ticket */}
-        </span>
-      </div>
       <div className="flex flex-col items-center w-full gap-2 px-4 pb-4 pt-2">
         {children}
       </div>
@@ -66,7 +91,7 @@ export function TicketItemCard({
           {item.event.title}
         </p>
         <p className="text-sm text-white/70 text-center">
-          {item.event.date} · {item.event.time}
+          {item.event.date} · {formatTicketTime(item.event.time)}
         </p>
         <p className="text-sm text-white/70 text-center">
           {item.event.venue || item.event.placename || ""}
@@ -174,7 +199,7 @@ export function TicketInstanceCard({
 
       <p className="text-sm text-white/70 text-center">
         {ticket.date || ""}
-        {ticket.time ? ` · ${ticket.time}` : ""}
+        {ticket.time ? ` · ${formatTicketTime(ticket.time)}` : ""}
       </p>
       <p className="text-sm text-white/80 text-center">
         Booked at: ₹{ticket.price ?? 0}
@@ -256,7 +281,7 @@ export function TicketCard({ booking }: { booking: Booking }) {
         />
       </div>
       <p className="text-sm text-white/70 text-center">
-        {firstItem?.event.date} · {firstItem?.event.time}
+        {firstItem?.event.date} · {formatTicketTime(firstItem?.event.time)}
       </p>
       <p className="text-sm text-white/80 text-center">
         Booked at: ₹{firstItem?.event.price ?? 0}
