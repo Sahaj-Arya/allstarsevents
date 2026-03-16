@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Booking } from "../models/Booking.js";
 import { User } from "../models/User.js";
+import { Attendance } from "../models/Attendance.js";
 import Ticket from "../models/Ticket.js";
 
 function normalizeTicketToken(value) {
@@ -15,6 +16,49 @@ function normalizeTicketToken(value) {
   }
 
   return decoded.replace(/^\{+|\}+$/g, "").trim();
+}
+
+async function logAttendance({
+  ticket,
+  booking,
+  user,
+  scanCategory,
+  scanSource,
+}) {
+  if (!ticket?._id || !ticket?.event || !ticket?.user || !ticket?.booking) {
+    return;
+  }
+
+  const eventType = ticket?.event?.type || "event";
+  const bookingType = ticket?.bookingType || "monthly";
+  const sessionDate = ticket?.sessionDate || ticket?.date || "";
+
+  await Attendance.findOneAndUpdate(
+    { ticket: ticket._id },
+    {
+      $setOnInsert: {
+        ticket: ticket._id,
+        booking: ticket.booking,
+        user: ticket.user,
+        event: ticket.event?._id || ticket.event,
+        eventId: ticket.eventId || ticket.event?.id || "",
+        eventTitle: ticket.title || ticket.event?.title || "",
+        eventType,
+        bookingType,
+        sessionDate,
+        date: ticket.date || ticket.event?.date || "",
+        time: ticket.time || ticket.event?.time || "",
+        userName: user?.name || "",
+        userPhone: user?.phone || booking?.phone || "",
+        userEmail: user?.email || "",
+        bookingToken: booking?.ticketToken || "",
+        scannedAt: ticket.scannedAt || new Date(),
+        scanCategory: scanCategory || "any",
+        scanSource,
+      },
+    },
+    { upsert: true },
+  ).lean();
 }
 
 async function enrichBooking(booking) {
@@ -246,6 +290,125 @@ export async function listTickets(req, res) {
   }
 }
 
+export async function listAttendanceHistory(req, res) {
+  try {
+    const limitRaw = Number(req.query.limit || 200);
+    const limit = Math.max(1, Math.min(limitRaw, 1000));
+    const pageRaw = Number(req.query.page || 1);
+    const page = Math.max(1, pageRaw);
+    const skip = (page - 1) * limit;
+
+    const filters = {};
+    if (req.query.eventId) {
+      filters.eventId = String(req.query.eventId);
+    }
+    if (req.query.eventType) {
+      filters.eventType = String(req.query.eventType);
+    }
+    if (req.query.bookingType) {
+      filters.bookingType = String(req.query.bookingType);
+    }
+    if (req.query.sessionDate) {
+      filters.sessionDate = String(req.query.sessionDate);
+    }
+    if (req.query.userPhone) {
+      filters.userPhone = String(req.query.userPhone);
+    }
+
+    const [records, total] = await Promise.all([
+      Attendance.find(filters)
+        .sort({ scannedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Attendance.countDocuments(filters),
+    ]);
+
+    const payload = records.map((record) => ({
+      id: record._id.toString(),
+      ticketId: record.ticket?.toString?.() || String(record.ticket || ""),
+      bookingToken: record.bookingToken || "",
+      eventId: record.eventId || "",
+      eventTitle: record.eventTitle || "",
+      eventType: record.eventType || "event",
+      bookingType: record.bookingType || "monthly",
+      sessionDate: record.sessionDate || "",
+      date: record.date || "",
+      time: record.time || "",
+      userName: record.userName || "",
+      userPhone: record.userPhone || "",
+      userEmail: record.userEmail || "",
+      scannedAt: record.scannedAt,
+      scanCategory: record.scanCategory || "any",
+      scanSource: record.scanSource || "ticket_id",
+      createdAt: record.createdAt,
+    }));
+
+    return res.json({ records: payload, page, limit, total });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+export async function getAttendanceRoster(req, res) {
+  try {
+    const eventId = String(req.query.eventId || "").trim();
+    const sessionDate = String(req.query.sessionDate || "").trim();
+    const bookingType = String(req.query.bookingType || "").trim();
+
+    if (!eventId) {
+      return res.status(400).json({ error: "eventId required" });
+    }
+
+    const filters = { eventId };
+    if (sessionDate) filters.sessionDate = sessionDate;
+    if (bookingType === "monthly" || bookingType === "drop_in") {
+      filters.bookingType = bookingType;
+    }
+
+    const tickets = await Ticket.find(filters)
+      .sort({ date: 1, createdAt: 1 })
+      .populate("user", "name phone email")
+      .populate("booking", "phone ticketToken")
+      .populate("event", "id title type date time");
+
+    const rows = tickets.map((ticket) => {
+      const userName = ticket.user?.name || "";
+      const userPhone = ticket.user?.phone || ticket.booking?.phone || "";
+      const userEmail = ticket.user?.email || "";
+      return {
+        ticketId: ticket._id.toString(),
+        bookingToken: ticket.booking?.ticketToken || "",
+        eventId: ticket.eventId || ticket.event?.id || "",
+        eventTitle: ticket.title || ticket.event?.title || "",
+        eventType: ticket.event?.type || "event",
+        bookingType: ticket.bookingType || "monthly",
+        sessionDate: ticket.sessionDate || ticket.date || "",
+        time: ticket.time || ticket.event?.time || "",
+        userName,
+        userPhone,
+        userEmail,
+        status: ticket.isScanned ? "present" : "absent",
+        scannedAt: ticket.scannedAt,
+      };
+    });
+
+    const presentCount = rows.filter((row) => row.status === "present").length;
+    const absentCount = rows.length - presentCount;
+
+    return res.json({
+      eventId,
+      sessionDate,
+      total: rows.length,
+      presentCount,
+      absentCount,
+      rows,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 export async function validateTicket(req, res) {
   try {
     const { token, scanCategory, targetEventId } = req.body || {};
@@ -361,6 +524,15 @@ export async function validateTicket(req, res) {
       ticket.isScanned = true;
       ticket.scannedAt = new Date();
       await ticket.save();
+
+      await logAttendance({
+        ticket,
+        booking: ticket.booking,
+        user,
+        scanCategory: category,
+        scanSource: "ticket_id",
+      });
+
       return res.json({ status: "scanned", ticket, user });
     }
 
@@ -436,6 +608,14 @@ export async function validateTicket(req, res) {
     ticketToScan.isScanned = true;
     ticketToScan.scannedAt = new Date();
     await ticketToScan.save();
+
+    await logAttendance({
+      ticket: ticketToScan,
+      booking,
+      user,
+      scanCategory: category,
+      scanSource: "booking_token",
+    });
 
     const updatedMatching = await Ticket.find({
       booking: booking._id,

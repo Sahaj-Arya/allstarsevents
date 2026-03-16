@@ -120,3 +120,39 @@ export type HomeSettings = {
   heroDescription?: string;
   heroOverlayOpacity: number;
 };
+
+export type AttendanceRecord = {
+  id: string;
+  ticketId: string;
+  bookingToken?: string;
+  eventId: string;
+  eventTitle: string;
+  eventType: "event" | "workshop" | "class";
+  bookingType: "monthly" | "drop_in";
+  sessionDate?: string;
+  date?: string;
+  time?: string;
+  userName?: string;
+  userPhone?: string;
+  userEmail?: string;
+  scannedAt?: string;
+  scanCategory?: string;
+  scanSource?: "ticket_id" | "booking_token";
+  createdAt?: string;
+};
+
+export type AttendanceRosterRow = {
+  ticketId: string;
+  bookingToken?: string;
+  eventId: string;
+  eventTitle: string;
+  eventType: "event" | "workshop" | "class";
+  bookingType: "monthly" | "drop_in";
+  sessionDate?: string;
+  time?: string;
+  userName?: string;
+  userPhone?: string;
+  userEmail?: string;
+  status: "present" | "absent";
+  scannedAt?: string;
+};

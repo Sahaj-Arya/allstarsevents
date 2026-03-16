@@ -2,6 +2,8 @@ import express from "express";
 import {
   getShareableTicket,
   getTickets,
+  getAttendanceRoster,
+  listAttendanceHistory,
   listTickets,
   searchTickets,
   validateTicket,
@@ -13,6 +15,8 @@ const router = express.Router();
 router.get("/share/:token", getShareableTicket);
 router.get("/search", searchTickets);
 router.get("/list", listTickets);
+router.get("/attendance", listAttendanceHistory);
+router.get("/attendance-roster", getAttendanceRoster);
 router.post("/validate", validateTicket);
 router.get("/", verifyAuth, getTickets);
 

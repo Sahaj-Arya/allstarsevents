@@ -1,6 +1,8 @@
 import { fireAlert } from "./alerts";
 import {
   AdminTicketListItem,
+  AttendanceRecord,
+  AttendanceRosterRow,
   Booking,
   CartItem,
   EventItem,
@@ -333,6 +335,88 @@ export async function fetchAllTicketsAdmin(
     total: data.total || 0,
     page: data.page || page,
     limit: data.limit || limit,
+  };
+}
+
+export async function fetchAttendanceHistoryAdmin(params?: {
+  page?: number;
+  limit?: number;
+  eventId?: string;
+  eventType?: "event" | "workshop" | "class";
+  bookingType?: "monthly" | "drop_in";
+  sessionDate?: string;
+  userPhone?: string;
+}): Promise<{
+  records: AttendanceRecord[];
+  total: number;
+  page: number;
+  limit: number;
+}> {
+  const search = new URLSearchParams();
+  search.set("page", String(params?.page || 1));
+  search.set("limit", String(params?.limit || 200));
+  if (params?.eventId) search.set("eventId", params.eventId);
+  if (params?.eventType) search.set("eventType", params.eventType);
+  if (params?.bookingType) search.set("bookingType", params.bookingType);
+  if (params?.sessionDate) search.set("sessionDate", params.sessionDate);
+  if (params?.userPhone) search.set("userPhone", params.userPhone);
+
+  const res = await fetch(
+    `${API_BASE_URL}/tickets/attendance?${search.toString()}`,
+  );
+  if (!res.ok) {
+    fireAlert("error", "Failed to fetch attendance history");
+    return { records: [], total: 0, page: 1, limit: 200 };
+  }
+  const data = await res.json().catch(() => ({}));
+  return {
+    records: data.records || [],
+    total: data.total || 0,
+    page: data.page || 1,
+    limit: data.limit || 200,
+  };
+}
+
+export async function fetchAttendanceRosterAdmin(params: {
+  eventId: string;
+  sessionDate?: string;
+  bookingType?: "monthly" | "drop_in";
+}): Promise<{
+  eventId: string;
+  sessionDate?: string;
+  total: number;
+  presentCount: number;
+  absentCount: number;
+  rows: AttendanceRosterRow[];
+}> {
+  const search = new URLSearchParams();
+  search.set("eventId", params.eventId);
+  if (params.sessionDate) search.set("sessionDate", params.sessionDate);
+  if (params.bookingType) search.set("bookingType", params.bookingType);
+
+  const res = await fetch(
+    `${API_BASE_URL}/tickets/attendance-roster?${search.toString()}`,
+  );
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    fireAlert("error", data?.error || "Failed to fetch attendance roster");
+    return {
+      eventId: params.eventId,
+      sessionDate: params.sessionDate,
+      total: 0,
+      presentCount: 0,
+      absentCount: 0,
+      rows: [],
+    };
+  }
+  const data = await res.json().catch(() => ({}));
+  return {
+    eventId: data.eventId || params.eventId,
+    sessionDate: data.sessionDate || params.sessionDate,
+    total: data.total || 0,
+    presentCount: data.presentCount || 0,
+    absentCount: data.absentCount || 0,
+    rows: data.rows || [],
   };
 }
 
