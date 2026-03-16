@@ -60,8 +60,8 @@ export async function updateHomeSettings(req, res) {
 
     const settings = await HomeSettings.findOneAndUpdate(
       { key: "home" },
-      { $set: update, $setOnInsert: DEFAULT_SETTINGS },
-      { new: true, upsert: true },
+      { $set: update, $setOnInsert: { key: "home" } },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
     ).lean();
 
     return res.json(settings);
