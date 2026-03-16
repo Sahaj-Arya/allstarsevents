@@ -74,12 +74,23 @@ const normalizeRepeat = (eventType, value) => {
       ? Math.floor(occurrencesRaw)
       : null;
 
+  const rawDays = Array.isArray(raw.daysOfWeek) ? raw.daysOfWeek : [];
+  const daysOfWeek =
+    enabled && frequency === "weekly"
+      ? rawDays
+          .map(Number)
+          .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
+          .sort()
+          .filter((d, i, arr) => arr.indexOf(d) === i)
+      : [];
+
   return {
     enabled,
     frequency,
     interval,
     until,
     occurrences,
+    daysOfWeek,
   };
 };
 

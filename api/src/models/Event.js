@@ -41,6 +41,7 @@ const eventSchema = new mongoose.Schema(
       interval: { type: Number, min: 1, default: 1 },
       until: { type: String, default: "" },
       occurrences: { type: Number, min: 1, default: null },
+      daysOfWeek: { type: [Number], default: [] },
     },
     isActive: { type: Boolean, default: true },
   },
