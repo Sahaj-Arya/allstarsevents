@@ -8,6 +8,7 @@ export type EventRepeatConfig = {
   interval: number;
   until?: string;
   occurrences?: number | null;
+  daysOfWeek?: number[]; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 };
 
 export type EventAboutSection = {

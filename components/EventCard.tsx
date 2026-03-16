@@ -10,6 +10,37 @@ function isVideoUrl(url?: string) {
   return /\.(mp4|webm|ogg|mov)$/i.test(url);
 }
 
+function generateClassDates(
+  startDate: string,
+  daysOfWeek: number[],
+  until?: string,
+  occurrences?: number,
+): string[] {
+  if (!startDate || daysOfWeek.length === 0) return [];
+
+  const dates: string[] = [];
+  const start = new Date(startDate);
+  const endDate = until
+    ? new Date(until)
+    : new Date(start.getFullYear(), start.getMonth() + 1, 0);
+
+  let currentDate = new Date(start);
+  let count = 0;
+  const maxOccurrences =
+    typeof occurrences === "number" ? occurrences : Infinity;
+
+  while (currentDate <= endDate && count < maxOccurrences) {
+    const dayOfWeek = currentDate.getDay();
+    if (daysOfWeek.includes(dayOfWeek)) {
+      dates.push(currentDate.toISOString().split("T")[0]);
+      count++;
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return dates;
+}
+
 export function EventCard({ event }: { event: EventItem }) {
   const allAssets = [
     event.photo,
@@ -97,6 +128,60 @@ export function EventCard({ event }: { event: EventItem }) {
           )}
         </div>
         <h3 className="text-2xl font-bold leading-tight mb-1">{event.title}</h3>
+
+        {/* Show class schedule for recurring classes */}
+        {event.type === "class" &&
+          event.repeat?.enabled &&
+          event.repeat?.frequency === "weekly" &&
+          event.repeat?.daysOfWeek &&
+          event.repeat.daysOfWeek.length > 0 && (
+            <div className="mb-2 rounded-lg border border-white/10 bg-white/5 p-2">
+              <p className="text-xs font-semibold text-white/70 mb-1">
+                Class Schedule:
+              </p>
+              <div className="flex flex-wrap gap-1 mb-2">
+                {[
+                  { day: 0, label: "Sun" },
+                  { day: 1, label: "Mon" },
+                  { day: 2, label: "Tue" },
+                  { day: 3, label: "Wed" },
+                  { day: 4, label: "Thu" },
+                  { day: 5, label: "Fri" },
+                  { day: 6, label: "Sat" },
+                ]
+                  .filter(({ day }) => event.repeat?.daysOfWeek?.includes(day))
+                  .map(({ label }) => (
+                    <span
+                      key={label}
+                      className="rounded-full bg-rose-600/30 px-2 py-0.5 text-xs font-semibold text-rose-200"
+                    >
+                      {label}
+                    </span>
+                  ))}
+              </div>
+              <div className="text-xs text-white/60">
+                {generateClassDates(
+                  event.date,
+                  event.repeat.daysOfWeek,
+                  event.repeat.until,
+                  event.repeat.occurrences ?? undefined,
+                ).length > 0 && (
+                  <p>
+                    {
+                      generateClassDates(
+                        event.date,
+                        event.repeat.daysOfWeek,
+                        event.repeat.until,
+                        event.repeat.occurrences ?? undefined,
+                      ).length
+                    }{" "}
+                    sessions planned
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
         {event.placename && (
           <a
             className="text-sm text-white/70 mb-1"

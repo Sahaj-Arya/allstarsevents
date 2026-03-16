@@ -100,6 +100,37 @@ const getEventLifecycleStatus = (event: EventItem) => {
   return "active" as const;
 };
 
+const generateClassDates = (
+  startDate: string,
+  daysOfWeek: number[],
+  until?: string,
+  occurrences?: number,
+) => {
+  if (!startDate || daysOfWeek.length === 0) return [];
+
+  const dates: string[] = [];
+  const start = new Date(startDate);
+  const endDate = until
+    ? new Date(until)
+    : new Date(start.getFullYear(), start.getMonth() + 1, 0);
+
+  let currentDate = new Date(start);
+  let count = 0;
+  const maxOccurrences =
+    typeof occurrences === "number" ? occurrences : Infinity;
+
+  while (currentDate <= endDate && count < maxOccurrences) {
+    const dayOfWeek = currentDate.getDay();
+    if (daysOfWeek.includes(dayOfWeek)) {
+      dates.push(currentDate.toISOString().split("T")[0]);
+      count++;
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return dates;
+};
+
 const lifecycleRank = (status: "active" | "inactive" | "past") => {
   if (status === "active") return 0;
   if (status === "inactive") return 1;
@@ -137,6 +168,7 @@ export default function AdminEventsPage() {
   const [repeatInterval, setRepeatInterval] = useState("1");
   const [repeatUntil, setRepeatUntil] = useState("");
   const [repeatOccurrences, setRepeatOccurrences] = useState("");
+  const [repeatDaysOfWeek, setRepeatDaysOfWeek] = useState<number[]>([1, 3, 5]); // Default: Mon, Wed, Fri
   const [isActive, setIsActive] = useState(true);
   const [aboutJson, setAboutJson] = useState("[]");
   const [result, setResult] = useState<EventItem | null>(null);
@@ -194,6 +226,11 @@ export default function AdminEventsPage() {
     setRepeatUntil(toDateInputValue(repeat?.until || ""));
     setRepeatOccurrences(
       typeof repeat?.occurrences === "number" ? String(repeat.occurrences) : "",
+    );
+    setRepeatDaysOfWeek(
+      repeat?.daysOfWeek && repeat.daysOfWeek.length > 0
+        ? repeat.daysOfWeek
+        : [1, 3, 5],
     );
   };
 
@@ -279,6 +316,10 @@ export default function AdminEventsPage() {
           repeatOccurrences.trim().length > 0
             ? Math.max(1, Number(repeatOccurrences) || 1)
             : null,
+        daysOfWeek:
+          type === "class" && repeatEnabled && repeatFrequency === "weekly"
+            ? repeatDaysOfWeek
+            : [],
       };
 
       const normalizedDateTime = splitDateTimeLocalValue(dateTime);
@@ -735,64 +776,142 @@ export default function AdminEventsPage() {
             </label>
 
             {repeatEnabled && (
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="space-y-2">
-                  <span className="text-sm font-semibold text-white">
-                    Repeat frequency
-                  </span>
-                  <select
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-                    value={repeatFrequency}
-                    onChange={(e) =>
-                      setRepeatFrequency(
-                        e.target.value as "daily" | "weekly" | "monthly",
-                      )
-                    }
-                  >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                  </select>
-                </label>
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="space-y-2">
+                    <span className="text-sm font-semibold text-white">
+                      Repeat frequency
+                    </span>
+                    <select
+                      className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                      value={repeatFrequency}
+                      onChange={(e) =>
+                        setRepeatFrequency(
+                          e.target.value as "daily" | "weekly" | "monthly",
+                        )
+                      }
+                    >
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                    </select>
+                  </label>
 
-                <label className="space-y-2">
-                  <span className="text-sm font-semibold text-white">
-                    Every (interval)
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-                    value={repeatInterval}
-                    onChange={(e) => setRepeatInterval(e.target.value)}
-                  />
-                </label>
+                  <label className="space-y-2">
+                    <span className="text-sm font-semibold text-white">
+                      Every (interval)
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                      value={repeatInterval}
+                      onChange={(e) => setRepeatInterval(e.target.value)}
+                    />
+                  </label>
 
-                <label className="space-y-2">
-                  <span className="text-sm font-semibold text-white">
-                    Repeat until (optional)
-                  </span>
-                  <input
-                    type="date"
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-                    value={repeatUntil}
-                    onChange={(e) => setRepeatUntil(e.target.value)}
-                  />
-                </label>
+                  <label className="space-y-2">
+                    <span className="text-sm font-semibold text-white">
+                      Repeat until (optional)
+                    </span>
+                    <input
+                      type="date"
+                      className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                      value={repeatUntil}
+                      onChange={(e) => setRepeatUntil(e.target.value)}
+                    />
+                  </label>
 
-                <label className="space-y-2">
-                  <span className="text-sm font-semibold text-white">
-                    Max occurrences (optional)
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-                    value={repeatOccurrences}
-                    onChange={(e) => setRepeatOccurrences(e.target.value)}
-                    placeholder="e.g. 12"
-                  />
-                </label>
+                  <label className="space-y-2">
+                    <span className="text-sm font-semibold text-white">
+                      Max occurrences (optional)
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                      value={repeatOccurrences}
+                      onChange={(e) => setRepeatOccurrences(e.target.value)}
+                      placeholder="e.g. 12"
+                    />
+                  </label>
+                </div>
+
+                {/* Day of Week Selector */}
+                {repeatFrequency === "weekly" && (
+                  <div className="space-y-2">
+                    <span className="text-sm font-semibold text-white">
+                      Select days for this class
+                    </span>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {[
+                        { day: 0, label: "Sun" },
+                        { day: 1, label: "Mon" },
+                        { day: 2, label: "Tue" },
+                        { day: 3, label: "Wed" },
+                        { day: 4, label: "Thu" },
+                        { day: 5, label: "Fri" },
+                        { day: 6, label: "Sat" },
+                      ].map(({ day, label }) => (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => {
+                            setRepeatDaysOfWeek((prev) =>
+                              prev.includes(day)
+                                ? prev.filter((d) => d !== day)
+                                : [...prev, day].sort(),
+                            );
+                          }}
+                          className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                            repeatDaysOfWeek.includes(day)
+                              ? "border-rose-600 bg-rose-600/20 text-white"
+                              : "border border-white/20 bg-white/5 text-white/70 hover:border-white/40"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Date Preview */}
+                {repeatFrequency === "weekly" &&
+                  repeatDaysOfWeek.length > 0 &&
+                  dateTime && (
+                    <div className="space-y-2">
+                      <span className="text-sm font-semibold text-white">
+                        Preview: Upcoming class dates
+                      </span>
+                      <div className="max-h-48 overflow-auto rounded-lg border border-white/10 bg-black/50 p-3">
+                        <div className="grid gap-2 text-xs text-white/70">
+                          {generateClassDates(
+                            splitDateTimeLocalValue(dateTime).date,
+                            repeatDaysOfWeek,
+                            repeatUntil,
+                            repeatOccurrences
+                              ? Number(repeatOccurrences)
+                              : undefined,
+                          ).map((date, idx) => (
+                            <div
+                              key={date}
+                              className="flex items-center justify-between rounded border border-white/10 bg-black/30 px-2 py-1"
+                            >
+                              <span>
+                                {new Date(date).toLocaleDateString("en-US", {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </span>
+                              <span className="text-white/50">#{idx + 1}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
               </div>
             )}
           </div>
