@@ -2,10 +2,16 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { validateTicket } from "../../../lib/api";
+import { fetchEvents, validateTicket } from "../../../lib/api";
+import { EventItem } from "../../../lib/types";
 
 export default function ValidatePage() {
   const [token, setToken] = useState("");
+  const [scanCategory, setScanCategory] = useState<
+    "any" | "event" | "workshop" | "class" | "drop_in_class"
+  >("any");
+  const [targetEventId, setTargetEventId] = useState("");
+  const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [scannerActive, setScannerActive] = useState(false);
   const [scannerError, setScannerError] = useState<string | null>(null);
@@ -28,7 +34,7 @@ export default function ValidatePage() {
     if (!value) return;
     setLoading(true);
     try {
-      const res = await validateTicket(value);
+      const res = await validateTicket(value, scanCategory, targetEventId);
       if (!res) {
         setValidationResult({ status: "error", error: "No response" });
         return;
@@ -49,6 +55,30 @@ export default function ValidatePage() {
     e.preventDefault();
     await runValidation(token);
   };
+
+  useEffect(() => {
+    let active = true;
+    const loadEvents = async () => {
+      const data = await fetchEvents();
+      if (active) setEvents(data || []);
+    };
+    loadEvents();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const categoryOptions = events.filter((event) => {
+    if (scanCategory === "any") return true;
+    if (scanCategory === "drop_in_class") return event.type === "class";
+    return event.type === scanCategory;
+  });
+
+  useEffect(() => {
+    if (!targetEventId) return;
+    const exists = categoryOptions.some((event) => event.id === targetEventId);
+    if (!exists) setTargetEventId("");
+  }, [categoryOptions, targetEventId]);
 
   useEffect(() => {
     let mounted = true;
@@ -190,7 +220,7 @@ export default function ValidatePage() {
       cancelled = true;
       stopScanner();
     };
-  }, [scannerActive, selectedCameraId]);
+  }, [scannerActive, selectedCameraId, scanCategory, targetEventId]);
 
   return (
     <div className="mx-auto max-w-lg px-6 py-10">
@@ -200,6 +230,46 @@ export default function ValidatePage() {
       </p>
 
       <div className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur">
+        <label className="block text-xs text-white/70">
+          Scan category
+          <select
+            value={scanCategory}
+            onChange={(e) =>
+              setScanCategory(
+                e.target.value as
+                  | "any"
+                  | "event"
+                  | "workshop"
+                  | "class"
+                  | "drop_in_class",
+              )
+            }
+            className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+          >
+            <option value="any">Any type</option>
+            <option value="event">Event</option>
+            <option value="workshop">Workshop</option>
+            <option value="class">Class (monthly)</option>
+            <option value="drop_in_class">Drop-in class</option>
+          </select>
+        </label>
+
+        <label className="block text-xs text-white/70">
+          Specific event/class/workshop (optional)
+          <select
+            value={targetEventId}
+            onChange={(e) => setTargetEventId(e.target.value)}
+            className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+          >
+            <option value="">All in selected category</option>
+            {categoryOptions.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.title} ({event.id})
+              </option>
+            ))}
+          </select>
+        </label>
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm font-semibold text-white">Camera scanner</p>
           <button
@@ -253,7 +323,7 @@ export default function ValidatePage() {
         <label className="block space-y-2">
           <span className="text-sm font-semibold text-white">Ticket token</span>
           <input
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500"
             value={token}
             onChange={(e) => setToken(e.target.value)}
             placeholder="Paste token if needed"

@@ -533,7 +533,16 @@ export async function updateProfileApi(
   return data;
 }
 
-export async function validateTicket(ticketToken: string) {
+export async function validateTicket(
+  ticketToken: string,
+  scanCategory:
+    | "any"
+    | "event"
+    | "workshop"
+    | "class"
+    | "drop_in_class" = "any",
+  targetEventId?: string,
+) {
   const normalizeToken = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return "";
@@ -563,12 +572,17 @@ export async function validateTicket(ticketToken: string) {
   const res = await fetch(`${API_BASE_URL}/ticket/validate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: normalizedToken }),
+    body: JSON.stringify({
+      token: normalizedToken,
+      scanCategory,
+      targetEventId: targetEventId || "",
+    }),
   });
 
   if (!res.ok) {
-    fireAlert("error", "Ticket validation failed");
-    return { status: "invalid" as const };
+    const data = await res.json().catch(() => ({}));
+    fireAlert("error", data?.error || "Ticket validation failed");
+    return { status: "invalid" as const, error: data?.error };
   }
 
   const data = await res.json();

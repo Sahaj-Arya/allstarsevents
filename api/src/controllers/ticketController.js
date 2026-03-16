@@ -248,8 +248,37 @@ export async function listTickets(req, res) {
 
 export async function validateTicket(req, res) {
   try {
-    const { token } = req.body || {};
+    const { token, scanCategory, targetEventId } = req.body || {};
     if (!token) return res.status(400).json({ error: "token required" });
+
+    const allowedCategories = new Set([
+      "any",
+      "event",
+      "workshop",
+      "class",
+      "drop_in_class",
+    ]);
+    const category = allowedCategories.has(scanCategory) ? scanCategory : "any";
+    const normalizedTargetEventId = String(targetEventId || "").trim();
+
+    const isTicketInCategory = (ticket) => {
+      if (category === "any") return true;
+      const eventType = ticket?.event?.type || "event";
+      const bookingType = ticket?.bookingType || "monthly";
+      if (category === "drop_in_class") {
+        return eventType === "class" && bookingType === "drop_in";
+      }
+      if (category === "class") {
+        return eventType === "class" && bookingType !== "drop_in";
+      }
+      return eventType === category;
+    };
+
+    const isTicketForTarget = (ticket) => {
+      if (!normalizedTargetEventId) return true;
+      const ticketEventId = String(ticket?.eventId || ticket?.event?.id || "");
+      return ticketEventId === normalizedTargetEventId;
+    };
 
     const normalizeToken = (value) => {
       const trimmed = String(value || "").trim();
@@ -290,9 +319,22 @@ export async function validateTicket(req, res) {
         })
         .populate(
           "event",
-          "venue placename location title date time price photo",
+          "id venue placename location title date time price photo type",
         );
       if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+
+      if (!isTicketInCategory(ticket)) {
+        return res.status(400).json({
+          error: `This ticket is not a ${category.replace("_", " ")}`,
+        });
+      }
+
+      if (!isTicketForTarget(ticket)) {
+        return res.status(400).json({
+          error: `This ticket is not for event ${normalizedTargetEventId}`,
+        });
+      }
+
       ticket.venue =
         ticket.venue ||
         ticket.event?.venue ||
@@ -329,7 +371,7 @@ export async function validateTicket(req, res) {
 
     const tickets = await Ticket.find({ booking: booking._id }).populate(
       "event",
-      "venue placename location title date time price photo",
+      "id venue placename location title date time price photo type",
     );
     if (tickets.length === 0) {
       return res.status(404).json({ error: "No tickets for booking" });
@@ -350,7 +392,24 @@ export async function validateTicket(req, res) {
         ticket.location || ticket.event?.location || ticket.location;
     }
 
-    const allScanned = tickets.every((t) => t.isScanned);
+    const matchingTickets = tickets.filter(
+      (t) => isTicketInCategory(t) && isTicketForTarget(t),
+    );
+    if (matchingTickets.length === 0) {
+      if (normalizedTargetEventId) {
+        return res.status(400).json({
+          error: `No tickets found for event ${normalizedTargetEventId} in this booking`,
+        });
+      }
+      return res.status(400).json({
+        error:
+          category === "any"
+            ? "No tickets found in this booking"
+            : `No ${category.replace("_", " ")} tickets found in this booking`,
+      });
+    }
+
+    const pendingMatching = matchingTickets.filter((t) => !t.isScanned);
     const userDoc = booking.user;
     const user = userDoc
       ? {
@@ -360,20 +419,33 @@ export async function validateTicket(req, res) {
         }
       : { name: "", phone: booking.phone || "", email: "" };
 
-    if (allScanned) {
-      return res.json({ status: "already_scanned", tickets, user });
+    if (pendingMatching.length === 0) {
+      return res.json({
+        status: "already_scanned",
+        tickets: matchingTickets,
+        user,
+      });
     }
 
-    await Ticket.updateMany(
-      { booking: booking._id, isScanned: { $ne: true } },
-      { $set: { isScanned: true, scannedAt: new Date() } },
+    // Scan one matching pending ticket at a time so attendance stays per-class/per-seat accurate.
+    const ticketToScan = pendingMatching.sort(
+      (a, b) =>
+        new Date(a.date || a.createdAt || 0).getTime() -
+        new Date(b.date || b.createdAt || 0).getTime(),
+    )[0];
+    ticketToScan.isScanned = true;
+    ticketToScan.scannedAt = new Date();
+    await ticketToScan.save();
+
+    const updatedMatching = await Ticket.find({
+      booking: booking._id,
+      _id: { $in: matchingTickets.map((t) => t._id) },
+    }).populate(
+      "event",
+      "id venue placename location title date time price photo type",
     );
 
-    const updated = await Ticket.find({ booking: booking._id }).populate(
-      "event",
-      "venue placename location title date time price photo",
-    );
-    for (const ticket of updated) {
+    for (const ticket of updatedMatching) {
       ticket.venue =
         ticket.venue ||
         ticket.event?.venue ||
@@ -387,7 +459,7 @@ export async function validateTicket(req, res) {
       ticket.location =
         ticket.location || ticket.event?.location || ticket.location;
     }
-    return res.json({ status: "scanned", tickets: updated, user });
+    return res.json({ status: "scanned", tickets: updatedMatching, user });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
