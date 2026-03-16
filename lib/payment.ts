@@ -13,7 +13,7 @@ function loadRazorpayScript(): Promise<boolean> {
     if (typeof window === "undefined") return resolve(false);
     if (
       document.querySelector(
-        "script[src='https://checkout.razorpay.com/v1/checkout.js']"
+        "script[src='https://checkout.razorpay.com/v1/checkout.js']",
       )
     ) {
       return resolve(true);
@@ -28,19 +28,22 @@ function loadRazorpayScript(): Promise<boolean> {
 
 export async function startCheckout(
   cartItems: CartItem[],
-  profile: UserProfile
+  profile: UserProfile,
 ): Promise<Booking> {
   const paymentMode = "RAZORPAY";
-  const amount = cartItems.reduce(
-    (sum, item) => sum + item.event.price * item.quantity,
-    0
-  );
+  const amount = cartItems.reduce((sum, item) => {
+    const price =
+      item.bookingType === "drop_in" && item.event.drop_in_price != null
+        ? item.event.drop_in_price
+        : item.event.price;
+    return sum + price * item.quantity;
+  }, 0);
 
   const order = await createPaymentOrder(
     amount,
     profile,
     cartItems,
-    paymentMode
+    paymentMode,
   );
 
   // Always use Razorpay, do not allow MOCK mode
@@ -52,7 +55,7 @@ export async function startCheckout(
   const ok = await loadRazorpayScript();
   if (!ok) {
     throw new Error(
-      "Razorpay SDK failed to load. Switch to MOCK mode for development."
+      "Razorpay SDK failed to load. Switch to MOCK mode for development.",
     );
   }
 

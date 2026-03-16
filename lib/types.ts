@@ -24,6 +24,7 @@ export type EventItem = {
   description: string;
   price: number;
   original_price?: number;
+  drop_in_price?: number;
   photo: string;
   images?: string[];
   media?: string[];
@@ -43,7 +44,9 @@ export type EventItem = {
 export type CartItem = {
   event: EventItem;
   quantity: number;
-  ticketIds?: string[]; // array of Ticket _id for this cart item
+  ticketIds?: string[];
+  sessionDate?: string; // specific class session date for drop-in
+  bookingType?: "monthly" | "drop_in";
 };
 
 export type Ticket = {
@@ -58,6 +61,8 @@ export type Ticket = {
   venue?: string;
   placename?: string;
   seat?: string;
+  sessionDate?: string;
+  bookingType?: "monthly" | "drop_in";
   isScanned: boolean;
   scannedAt?: string;
   createdAt?: string;
@@ -95,6 +100,8 @@ export type AdminTicketListItem = {
   venue?: string;
   placename?: string;
   seat?: string;
+  sessionDate?: string;
+  bookingType?: "monthly" | "drop_in";
   isScanned: boolean;
   scannedAt?: string;
   createdAt?: string;

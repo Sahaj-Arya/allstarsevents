@@ -39,6 +39,8 @@ async function enrichBooking(booking) {
       venue,
       placename,
       seat: t.seat,
+      sessionDate: t.sessionDate || "",
+      bookingType: t.bookingType || "monthly",
       isScanned: Boolean(t.isScanned),
       scannedAt: t.scannedAt,
       createdAt: t.createdAt,
@@ -65,6 +67,8 @@ async function enrichBooking(booking) {
       location,
       venue,
       placename,
+      t.sessionDate || "",
+      t.bookingType || "monthly",
     ].join("|");
 
     const existing = grouped.get(key) || {
@@ -78,6 +82,8 @@ async function enrichBooking(booking) {
       location,
       venue,
       placename,
+      sessionDate: t.sessionDate || "",
+      bookingType: t.bookingType || "monthly",
       ticketIds: [],
     };
 
@@ -221,6 +227,8 @@ export async function listTickets(req, res) {
         venue,
         placename,
         seat: ticket.seat,
+        sessionDate: ticket.sessionDate || "",
+        bookingType: ticket.bookingType || "monthly",
         isScanned: Boolean(ticket.isScanned),
         scannedAt: ticket.scannedAt,
         createdAt: ticket.createdAt,

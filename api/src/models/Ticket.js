@@ -28,6 +28,15 @@ const ticketSchema = new mongoose.Schema({
   seat: {
     type: String,
   },
+  sessionDate: {
+    type: String,
+    default: "",
+  },
+  bookingType: {
+    type: String,
+    enum: ["monthly", "drop_in"],
+    default: "monthly",
+  },
   isScanned: {
     type: Boolean,
     default: false,

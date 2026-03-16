@@ -2,39 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ClassSessionSelector } from "../../../components/ClassSessionSelector";
 import { EventDetailsActions } from "../../../components/EventDetailsActions";
 import { fetchEventById } from "../../../lib/api";
-
-function generateClassDates(
-  startDate: string,
-  daysOfWeek: number[],
-  until?: string,
-  occurrences?: number,
-): string[] {
-  if (!startDate || daysOfWeek.length === 0) return [];
-
-  const dates: string[] = [];
-  const start = new Date(startDate);
-  const endDate = until
-    ? new Date(until)
-    : new Date(start.getFullYear(), start.getMonth() + 1, 0);
-
-  let currentDate = new Date(start);
-  let count = 0;
-  const maxOccurrences =
-    typeof occurrences === "number" ? occurrences : Infinity;
-
-  while (currentDate <= endDate && count < maxOccurrences) {
-    const dayOfWeek = currentDate.getDay();
-    if (daysOfWeek.includes(dayOfWeek)) {
-      dates.push(currentDate.toISOString().split("T")[0]);
-      count++;
-    }
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-
-  return dates;
-}
 
 export async function generateMetadata({
   params,
@@ -117,6 +87,11 @@ export default async function EventDetailsPage({
   const originalPrice = event.original_price;
   const hasDiscount =
     typeof originalPrice === "number" && originalPrice > event.price;
+  const isRecurringClass =
+    event.type === "class" &&
+    event.repeat?.enabled &&
+    event.repeat?.frequency === "weekly" &&
+    Boolean(event.repeat?.daysOfWeek?.length);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#050506] text-white">
@@ -246,91 +221,7 @@ export default async function EventDetailsPage({
       <section className="relative z-10 mx-auto max-w-6xl px-5 pb-14 pt-0">
         <div className="mt-0 grid gap-8">
           <div className="space-y-8">
-            {/* Class Schedule Section */}
-            {event.type === "class" &&
-              event.repeat?.enabled &&
-              event.repeat?.frequency === "weekly" &&
-              event.repeat?.daysOfWeek &&
-              event.repeat.daysOfWeek.length > 0 && (
-                <div
-                  className="rounded-3xl border border-white/20 bg-black/40 p-6 backdrop-blur-md"
-                  style={{ boxShadow: "0 4px 16px 0 rgba(0,0,0,0.37)" }}
-                >
-                  <h2 className="text-2xl font-semibold mb-4">
-                    Class Schedule
-                  </h2>
-                  <div className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        { day: 0, label: "Sunday" },
-                        { day: 1, label: "Monday" },
-                        { day: 2, label: "Tuesday" },
-                        { day: 3, label: "Wednesday" },
-                        { day: 4, label: "Thursday" },
-                        { day: 5, label: "Friday" },
-                        { day: 6, label: "Saturday" },
-                      ]
-                        .filter(({ day }) =>
-                          event.repeat?.daysOfWeek?.includes(day),
-                        )
-                        .map(({ label }) => (
-                          <span
-                            key={label}
-                            className="rounded-full bg-rose-600/30 px-3 py-1 text-sm font-semibold text-rose-200"
-                          >
-                            {label}
-                          </span>
-                        ))}
-                    </div>
-                    <div className="mt-4">
-                      <p className="text-sm text-white/70 mb-3">
-                        Upcoming sessions:
-                      </p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {generateClassDates(
-                          event.date,
-                          event.repeat.daysOfWeek,
-                          event.repeat.until,
-                          event.repeat.occurrences ?? undefined,
-                        )
-                          .slice(0, 8)
-                          .map((date) => (
-                            <div
-                              key={date}
-                              className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm"
-                            >
-                              <p className="text-white/80">
-                                {new Date(date).toLocaleDateString("en-US", {
-                                  weekday: "short",
-                                  month: "short",
-                                  day: "numeric",
-                                })}{" "}
-                                • {event.time}
-                              </p>
-                            </div>
-                          ))}
-                      </div>
-                      {generateClassDates(
-                        event.date,
-                        event.repeat.daysOfWeek,
-                        event.repeat.until,
-                        event.repeat.occurrences ?? undefined,
-                      ).length > 8 && (
-                        <p className="mt-3 text-xs text-white/50">
-                          +
-                          {generateClassDates(
-                            event.date,
-                            event.repeat.daysOfWeek,
-                            event.repeat.until,
-                            event.repeat.occurrences ?? undefined,
-                          ).length - 8}{" "}
-                          more sessions
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+            {isRecurringClass && <ClassSessionSelector event={event} />}
             <div
               className="rounded-3xl border border-white/20 bg-black/40 p-6 backdrop-blur-md"
               style={{ boxShadow: "0 4px 16px 0 rgba(0,0,0,0.37)" }}
@@ -407,28 +298,29 @@ export default async function EventDetailsPage({
           </div>
         </div>
       </section>
-      {/* Floating Book Now Button */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex w-full items-center justify-center px-4 pb-4 pointer-events-none">
-        <div
-          className="pointer-events-auto mx-auto flex max-w-md flex-1 flex-nowrap items-center justify-between gap-4 rounded-2xl border border-white/20 bg-black/20 px-3 py-3 shadow-2xl backdrop-blur-md"
-          style={{ boxShadow: "0 8px 32px 0 rgba(0,0,0,0.37)" }}
-        >
-          <div className="flex flex-col items-center gap-0 text-white">
-            {hasDiscount && (
-              <span className="text-white/60 line-through text-sm">
-                ₹{originalPrice}
-              </span>
-            )}
-            <span className="text-lg mt-[-2] font-bold">₹{event.price}</span>
+      {!isRecurringClass && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 flex w-full items-center justify-center px-4 pb-4 pointer-events-none">
+          <div
+            className="pointer-events-auto mx-auto flex max-w-md flex-1 flex-nowrap items-center justify-between gap-4 rounded-2xl border border-white/20 bg-black/20 px-3 py-3 shadow-2xl backdrop-blur-md"
+            style={{ boxShadow: "0 8px 32px 0 rgba(0,0,0,0.37)" }}
+          >
+            <div className="flex flex-col items-center gap-0 text-white">
+              {hasDiscount && (
+                <span className="text-white/60 line-through text-sm">
+                  ₹{originalPrice}
+                </span>
+              )}
+              <span className="text-lg mt-[-2] font-bold">₹{event.price}</span>
+            </div>
+            <EventDetailsActions
+              event={event}
+              buttonLabel="Book Now"
+              className="!px-6 !py-2 !rounded-full !text-base !font-semibold !bg-rose-600 hover:!bg-rose-500"
+              hideQuantity
+            />
           </div>
-          <EventDetailsActions
-            event={event}
-            buttonLabel="Book Now"
-            className="!px-6 !py-2 !rounded-full !text-base !font-semibold !bg-rose-600 hover:!bg-rose-500"
-            hideQuantity
-          />
         </div>
-      </div>
+      )}
     </div>
   );
 }

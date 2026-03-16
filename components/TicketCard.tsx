@@ -91,7 +91,11 @@ export function TicketItemCard({
           {item.event.title}
         </p>
         <p className="text-sm text-white/70 text-center">
-          {item.event.date} · {formatTicketTime(item.event.time)}
+          {item.sessionDate || item.event.date} ·{" "}
+          {formatTicketTime(item.event.time)}
+        </p>
+        <p className="text-xs uppercase tracking-[0.18em] text-white/50 text-center">
+          {item.bookingType === "drop_in" ? "Drop-in" : "Monthly"}
         </p>
         <p className="text-sm text-white/70 text-center">
           {item.event.venue || item.event.placename || ""}
@@ -132,6 +136,8 @@ export function TicketInstanceCard({
     venue?: string;
     placename?: string;
     seat?: string;
+    sessionDate?: string;
+    bookingType?: "monthly" | "drop_in";
     isScanned: boolean;
     scannedAt?: string;
   };
@@ -198,8 +204,11 @@ export function TicketInstanceCard({
       </div>
 
       <p className="text-sm text-white/70 text-center">
-        {ticket.date || ""}
+        {ticket.sessionDate || ticket.date || ""}
         {ticket.time ? ` · ${formatTicketTime(ticket.time)}` : ""}
+      </p>
+      <p className="text-xs uppercase tracking-[0.18em] text-white/50 text-center">
+        {ticket.bookingType === "drop_in" ? "Drop-in" : "Monthly"}
       </p>
       <p className="text-sm text-white/80 text-center">
         Booked at: ₹{ticket.price ?? 0}

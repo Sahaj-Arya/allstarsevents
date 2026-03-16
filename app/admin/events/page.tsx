@@ -114,7 +114,7 @@ const generateClassDates = (
     ? new Date(until)
     : new Date(start.getFullYear(), start.getMonth() + 1, 0);
 
-  let currentDate = new Date(start);
+  const currentDate = new Date(start);
   let count = 0;
   const maxOccurrences =
     typeof occurrences === "number" ? occurrences : Infinity;
@@ -153,6 +153,7 @@ export default function AdminEventsPage() {
   const [price, setPrice] = useState("");
   const [originalPrice, setOriginalPrice] = useState("");
   const [photo, setPhoto] = useState("");
+  const [dropInPrice, setDropInPrice] = useState("");
   const [images, setImages] = useState("");
   const [media, setMedia] = useState("");
   const [placename, setPlacename] = useState("");
@@ -198,6 +199,11 @@ export default function AdminEventsPage() {
         : "",
     );
     setPhoto(event.photo || "");
+    setDropInPrice(
+      typeof event.drop_in_price === "number"
+        ? String(event.drop_in_price)
+        : "",
+    );
     setImages((event.images || []).join("\n"));
     setMedia((event.media || []).join("\n"));
     setPlacename(event.placename || "");
@@ -254,7 +260,7 @@ export default function AdminEventsPage() {
     try {
       const parsed = JSON.parse(aboutJson);
       return { value: parsed, error: null };
-    } catch (err) {
+    } catch {
       return { value: [], error: "Invalid JSON" };
     }
   }, [aboutJson]);
@@ -332,6 +338,8 @@ export default function AdminEventsPage() {
         original_price:
           originalPrice.trim().length > 0 ? Number(originalPrice) : undefined,
         photo,
+        drop_in_price:
+          dropInPrice.trim().length > 0 ? Number(dropInPrice) : undefined,
         images: toList(images),
         media: toList(media),
         placename,
@@ -665,9 +673,13 @@ export default function AdminEventsPage() {
           />
         </label>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div
+          className={`grid gap-4 ${type === "class" ? "md:grid-cols-4" : "md:grid-cols-3"}`}
+        >
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-white">Price</span>
+            <span className="text-sm font-semibold text-white">
+              {type === "class" ? "Monthly price" : "Price"}
+            </span>
             <input
               type="number"
               className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
@@ -676,6 +688,23 @@ export default function AdminEventsPage() {
               required
             />
           </label>
+          {type === "class" && (
+            <label className="space-y-2">
+              <span className="text-sm font-semibold text-white">
+                Drop-in price
+              </span>
+              <input
+                type="number"
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                value={dropInPrice}
+                onChange={(e) => setDropInPrice(e.target.value)}
+                placeholder="e.g. 499"
+              />
+              <span className="text-xs text-white/50">
+                Per single class session
+              </span>
+            </label>
+          )}
           <label className="space-y-2">
             <span className="text-sm font-semibold text-white">
               Original price

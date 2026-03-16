@@ -156,6 +156,7 @@ const normalizeEventOutput = (event) => ({
   ...event,
   type: normalizeEventType(event?.type),
   repeat: normalizeRepeat(normalizeEventType(event?.type), event?.repeat),
+  drop_in_price: event?.drop_in_price ?? null,
   lifecycleStatus: getLifecycleStatus(event),
 });
 
@@ -193,6 +194,7 @@ export async function createEvent(req, res) {
       description,
       price,
       original_price,
+      drop_in_price,
       photo,
       images,
       media,
@@ -220,6 +222,10 @@ export async function createEvent(req, res) {
       original_price:
         original_price !== undefined && original_price !== null
           ? Number(original_price)
+          : null,
+      drop_in_price:
+        drop_in_price !== undefined && drop_in_price !== null
+          ? Number(drop_in_price)
           : null,
       photo: photo || "",
       images: toArray(images),
@@ -257,6 +263,12 @@ export async function updateEvent(req, res) {
       original_price:
         update.original_price !== undefined
           ? Number(update.original_price)
+          : undefined,
+      drop_in_price:
+        update.drop_in_price !== undefined
+          ? update.drop_in_price !== null
+            ? Number(update.drop_in_price)
+            : null
           : undefined,
       images: update.images !== undefined ? toArray(update.images) : undefined,
       media: update.media !== undefined ? toArray(update.media) : undefined,

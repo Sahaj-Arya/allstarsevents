@@ -9,6 +9,12 @@ const cartItemSchema = new mongoose.Schema(
     date: String,
     time: String,
     location: String,
+    sessionDate: { type: String, default: "" },
+    bookingType: {
+      type: String,
+      enum: ["monthly", "drop_in"],
+      default: "monthly",
+    },
     ticketIds: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -16,7 +22,7 @@ const cartItemSchema = new mongoose.Schema(
       },
     ],
   },
-  { _id: false }
+  { _id: false },
 );
 
 const bookingSchema = new mongoose.Schema(
@@ -35,7 +41,7 @@ const bookingSchema = new mongoose.Schema(
     razorpayOrderId: String,
     razorpayPaymentId: String,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const Booking = mongoose.model("Booking", bookingSchema);

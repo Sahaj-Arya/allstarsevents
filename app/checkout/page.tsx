@@ -26,6 +26,10 @@ function CheckoutContent() {
   const { profile, setProfile } = useAuth();
   const [event, setEvent] = useState<EventItem | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [bookingType, setBookingType] = useState<"monthly" | "drop_in">(
+    "monthly",
+  );
+  const [sessionDate, setSessionDate] = useState("");
   const [eventLoading, setEventLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [modalName, setModalName] = useState(profile?.name || "");
@@ -54,23 +58,50 @@ function CheckoutContent() {
 
   const cartItems = useMemo<CartItem[]>(() => {
     if (!event) return [];
-    return [{ event, quantity }];
-  }, [event, quantity]);
+    return [
+      {
+        event,
+        quantity: bookingType === "drop_in" ? 1 : quantity,
+        bookingType,
+        sessionDate: bookingType === "drop_in" ? sessionDate : undefined,
+      },
+    ];
+  }, [bookingType, event, quantity, sessionDate]);
+
+  const unitPrice = useMemo(() => {
+    if (!event) return 0;
+    return bookingType === "drop_in" && event.drop_in_price != null
+      ? event.drop_in_price
+      : event.price;
+  }, [bookingType, event]);
 
   const total = useMemo(() => {
     if (!event) return 0;
-    return event.price * quantity;
-  }, [event, quantity]);
+    return unitPrice * (bookingType === "drop_in" ? 1 : quantity);
+  }, [bookingType, event, quantity, unitPrice]);
 
   const originalPrice = event?.original_price;
   const hasDiscount =
-    typeof originalPrice === "number" && !!event && originalPrice > event.price;
-  const originalTotal = hasDiscount ? originalPrice * quantity : null;
+    bookingType === "monthly" &&
+    typeof originalPrice === "number" &&
+    !!event &&
+    originalPrice > event.price;
+  const originalTotal = hasDiscount
+    ? originalPrice * (bookingType === "drop_in" ? 1 : quantity)
+    : null;
 
   useEffect(() => {
     const eventId = searchParams.get("eventId");
+    const nextBookingType =
+      searchParams.get("bookingType") === "drop_in" ? "drop_in" : "monthly";
+    const nextSessionDate = searchParams.get("sessionDate") || "";
     const qty = Number(searchParams.get("qty"));
-    if (Number.isFinite(qty) && qty > 0) {
+    setBookingType(nextBookingType);
+    setSessionDate(nextSessionDate);
+
+    if (nextBookingType === "drop_in") {
+      setQuantity(1);
+    } else if (Number.isFinite(qty) && qty > 0) {
       setQuantity(Math.floor(qty));
     }
 
@@ -110,6 +141,10 @@ function CheckoutContent() {
     e.preventDefault();
     if (!event) {
       setError("Select an event to continue");
+      return;
+    }
+    if (bookingType === "drop_in" && !sessionDate) {
+      setError("Select a class session to continue");
       return;
     }
     if (profile && profile.token) {
@@ -182,6 +217,13 @@ function CheckoutContent() {
     await proceedPayment(newProfile, cartItems);
   };
 
+  const formattedSessionDate = sessionDate
+    ? new Date(`${sessionDate}T00:00:00`).toLocaleDateString("en-IN", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      })
+    : "";
   const adjustQuantity = (next: number) => {
     setQuantity(Math.max(1, next));
   };
@@ -239,30 +281,43 @@ function CheckoutContent() {
                     {event.title}
                   </p>
                   <p className="text-sm text-white/70 pt-4">
-                    {event.date} · {event.time}
+                    {bookingType === "drop_in" && formattedSessionDate
+                      ? `${formattedSessionDate} · ${event.time}`
+                      : `${event.date} · ${event.time}`}
+                  </p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-white/50 pt-2">
+                    {bookingType === "drop_in"
+                      ? "Drop-in class"
+                      : "Monthly pass"}
                   </p>
                 </div>
-                <div className="flex items-center rounded-full border border-white/15 bg-black/20">
-                  <button
-                    type="button"
-                    className="px-3 py-1 text-lg text-white/80 hover:text-white"
-                    onClick={() => adjustQuantity(quantity - 1)}
-                    aria-label="Decrease tickets"
-                  >
-                    −
-                  </button>
-                  <span className="px-3 font-semibold text-white">
-                    {quantity}
-                  </span>
-                  <button
-                    type="button"
-                    className="px-3 py-1 text-lg text-white/80 hover:text-white"
-                    onClick={() => adjustQuantity(quantity + 1)}
-                    aria-label="Increase tickets"
-                  >
-                    +
-                  </button>
-                </div>
+                {bookingType !== "drop_in" ? (
+                  <div className="flex items-center rounded-full border border-white/15 bg-black/20">
+                    <button
+                      type="button"
+                      className="px-3 py-1 text-lg text-white/80 hover:text-white"
+                      onClick={() => adjustQuantity(quantity - 1)}
+                      aria-label="Decrease tickets"
+                    >
+                      −
+                    </button>
+                    <span className="px-3 font-semibold text-white">
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      className="px-3 py-1 text-lg text-white/80 hover:text-white"
+                      onClick={() => adjustQuantity(quantity + 1)}
+                      aria-label="Increase tickets"
+                    >
+                      +
+                    </button>
+                  </div>
+                ) : (
+                  <div className="rounded-full border border-white/15 bg-black/20 px-4 py-2 text-sm font-semibold text-white">
+                    1 session
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -306,9 +361,14 @@ function CheckoutContent() {
                     <span className="line-through">₹{originalPrice}</span>
                   )}
                   <span>
-                    {quantity} x ₹{event.price}
+                    {bookingType === "drop_in" ? 1 : quantity} x ₹{unitPrice}
                   </span>
                 </div>
+                {bookingType === "drop_in" && formattedSessionDate && (
+                  <p className="mt-1 text-xs text-white/50">
+                    Session: {formattedSessionDate}
+                  </p>
+                )}
               </div>
               <div className="text-right">
                 {hasDiscount && originalTotal !== null && (

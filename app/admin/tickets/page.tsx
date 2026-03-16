@@ -211,6 +211,7 @@ export default function AdminTicketsPage() {
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Event</th>
+                <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Seat</th>
                 <th className="px-4 py-3">Status</th>
@@ -221,14 +222,14 @@ export default function AdminTicketsPage() {
             <tbody>
               {listLoading && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-4 text-white/60">
+                  <td colSpan={9} className="px-4 py-4 text-white/60">
                     Loading tickets...
                   </td>
                 </tr>
               )}
               {!listLoading && listTickets.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-4 text-white/60">
+                  <td colSpan={9} className="px-4 py-4 text-white/60">
                     No tickets available.
                   </td>
                 </tr>
@@ -239,7 +240,10 @@ export default function AdminTicketsPage() {
                   <td className="px-4 py-3">{ticket.user?.phone || "-"}</td>
                   <td className="px-4 py-3">{ticket.title || "Ticket"}</td>
                   <td className="px-4 py-3">
-                    {ticket.date || ""}
+                    {ticket.bookingType === "drop_in" ? "Drop-in" : "Monthly"}
+                  </td>
+                  <td className="px-4 py-3">
+                    {ticket.sessionDate || ticket.date || ""}
                     {ticket.time ? ` · ${ticket.time}` : ""}
                   </td>
                   <td className="px-4 py-3">{ticket.seat || "-"}</td>

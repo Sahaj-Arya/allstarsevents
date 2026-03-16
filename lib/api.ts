@@ -31,6 +31,8 @@ type ApiBooking = {
     venue?: string;
     placename?: string;
     type?: string;
+    sessionDate?: string;
+    bookingType?: string;
     ticketIds?: string[];
   }>;
   amount?: number;
@@ -49,6 +51,8 @@ type ApiBooking = {
     venue?: string;
     placename?: string;
     seat?: string;
+    sessionDate?: string;
+    bookingType?: string;
     isScanned?: boolean;
     scannedAt?: string;
     createdAt?: string;
@@ -169,6 +173,7 @@ export async function createEvent(payload: {
   description?: string;
   price: number;
   original_price?: number;
+  drop_in_price?: number;
   photo?: string;
   images?: string[];
   media?: string[];
@@ -300,19 +305,23 @@ export async function fetchAllTicketsAdmin(
 }
 
 function mapCartItemsForApi(cartItems: CartItem[]) {
-  return cartItems.map(({ event, quantity, ticketIds }) => ({
-    eventId: event.id,
-    title: event.title,
-    price: event.price,
-    quantity,
-    date: event.date,
-    time: event.time,
-    location: event.location,
-    venue: event.venue,
-    placename: event.placename,
-    type: event.type,
-    ticketIds,
-  }));
+  return cartItems.map(
+    ({ event, quantity, ticketIds, sessionDate, bookingType }) => ({
+      eventId: event.id,
+      title: event.title,
+      price: event.price,
+      quantity,
+      date: event.date,
+      time: event.time,
+      location: event.location,
+      venue: event.venue,
+      placename: event.placename,
+      type: event.type,
+      ticketIds,
+      sessionDate: sessionDate || "",
+      bookingType: bookingType || "monthly",
+    }),
+  );
 }
 
 function mapBookingFromApi(api: ApiBooking): Booking {
@@ -333,6 +342,10 @@ function mapBookingFromApi(api: ApiBooking): Booking {
     },
     quantity: item.quantity || 1,
     ticketIds: item.ticketIds || [],
+    sessionDate: item.sessionDate || undefined,
+    bookingType: (item.bookingType === "drop_in" ? "drop_in" : "monthly") as
+      | "monthly"
+      | "drop_in",
   }));
 
   return {
@@ -351,6 +364,10 @@ function mapBookingFromApi(api: ApiBooking): Booking {
         venue: t.venue,
         placename: t.placename,
         seat: t.seat,
+        sessionDate: t.sessionDate,
+        bookingType: (t.bookingType === "drop_in" ? "drop_in" : "monthly") as
+          | "monthly"
+          | "drop_in",
         isScanned: Boolean(t.isScanned),
         scannedAt: t.scannedAt,
         createdAt: t.createdAt,
@@ -451,6 +468,8 @@ export async function verifyPayment(params: {
         time?: string;
         location?: string;
         seat?: string;
+        sessionDate?: string;
+        bookingType?: string;
         isScanned?: boolean;
         createdAt?: string;
       }) => ({
@@ -463,6 +482,10 @@ export async function verifyPayment(params: {
         time: t.time,
         location: t.location,
         seat: t.seat,
+        sessionDate: t.sessionDate,
+        bookingType: (t.bookingType === "drop_in" ? "drop_in" : "monthly") as
+          | "monthly"
+          | "drop_in",
         isScanned: Boolean(t.isScanned),
         createdAt: t.createdAt,
       }),

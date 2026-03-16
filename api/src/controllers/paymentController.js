@@ -13,6 +13,95 @@ function resolveSmsTemplateType(typeSet) {
   return typeSet.size === 1 && typeSet.has("workshop") ? "workshop" : "event";
 }
 
+function generateClassSessionDates(eventDoc) {
+  const startDate = String(eventDoc?.date || "").trim();
+  const repeat = eventDoc?.repeat;
+  const daysOfWeek = Array.isArray(repeat?.daysOfWeek)
+    ? repeat.daysOfWeek.map(Number).filter((day) => Number.isInteger(day))
+    : [];
+
+  if (
+    !startDate ||
+    eventDoc?.type !== "class" ||
+    !repeat?.enabled ||
+    repeat?.frequency !== "weekly" ||
+    daysOfWeek.length === 0
+  ) {
+    return startDate ? [startDate] : [];
+  }
+
+  const dates = [];
+  const start = new Date(startDate);
+  const endDate = repeat?.until
+    ? new Date(repeat.until)
+    : new Date(start.getFullYear(), start.getMonth() + 1, 0);
+  const maxOccurrences =
+    typeof repeat?.occurrences === "number" && repeat.occurrences > 0
+      ? repeat.occurrences
+      : Number.POSITIVE_INFINITY;
+
+  let cursor = new Date(start);
+  let count = 0;
+  while (cursor <= endDate && count < maxOccurrences) {
+    if (daysOfWeek.includes(cursor.getDay())) {
+      dates.push(cursor.toISOString().split("T")[0]);
+      count += 1;
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return dates;
+}
+
+function buildTicketsForCartItem({ eventDoc, cartItem, bookingId, userId }) {
+  const quantity = Math.max(1, Number(cartItem.quantity) || 1);
+  const venue = eventDoc.venue || eventDoc.placename || eventDoc.location;
+  const placename = eventDoc.placename || eventDoc.venue || eventDoc.location;
+  const location = eventDoc.location || cartItem.location || "";
+  const title = eventDoc.title || cartItem.title;
+  const photo =
+    eventDoc.photo || eventDoc.images?.[0] || eventDoc.media?.[0] || "";
+  const bookingType =
+    cartItem.bookingType === "drop_in" ? "drop_in" : "monthly";
+  const basePrice =
+    bookingType === "drop_in" &&
+    eventDoc.drop_in_price != null &&
+    eventDoc.drop_in_price > 0
+      ? Number(eventDoc.drop_in_price)
+      : Number(eventDoc.price ?? cartItem.price ?? 0);
+
+  const sessionDates =
+    bookingType === "drop_in"
+      ? [cartItem.sessionDate || eventDoc.date || cartItem.date].filter(Boolean)
+      : generateClassSessionDates(eventDoc);
+
+  const tickets = [];
+  for (let attendeeIndex = 0; attendeeIndex < quantity; attendeeIndex += 1) {
+    for (const sessionDate of sessionDates.length > 0
+      ? sessionDates
+      : [eventDoc.date || cartItem.date].filter(Boolean)) {
+      tickets.push({
+        event: eventDoc._id,
+        user: userId,
+        booking: bookingId,
+        eventId: cartItem.eventId,
+        title,
+        photo,
+        price: basePrice,
+        date: sessionDate,
+        time: eventDoc.time || cartItem.time,
+        location,
+        venue,
+        placename,
+        sessionDate,
+        bookingType,
+      });
+    }
+  }
+
+  return tickets;
+}
+
 export function createPaymentController(razorpay) {
   return {
     createOrder: async (req, res) => {
@@ -38,6 +127,8 @@ export function createPaymentController(razorpay) {
               location,
               venue,
               placename,
+              sessionDate,
+              bookingType,
             }) => ({
               eventId,
               title,
@@ -48,6 +139,8 @@ export function createPaymentController(razorpay) {
               location,
               venue,
               placename,
+              sessionDate: sessionDate || "",
+              bookingType: bookingType === "drop_in" ? "drop_in" : "monthly",
             }),
           )
           .filter((item) => item.eventId) || [];
@@ -159,34 +252,14 @@ export function createPaymentController(razorpay) {
           const eventDoc = await Event.findOne({ id: cartItem.eventId });
           if (!eventDoc) continue;
           cartEventTypes.add(normalizeEventType(eventDoc.type));
-          const quantity = Math.max(1, Number(cartItem.quantity) || 1);
-          const venue =
-            eventDoc.venue || eventDoc.placename || eventDoc.location;
-          const placename =
-            eventDoc.placename || eventDoc.venue || eventDoc.location;
-          const location = eventDoc.location || cartItem.location || "";
-          const title = eventDoc.title || cartItem.title;
-          const photo =
-            eventDoc.photo || eventDoc.images?.[0] || eventDoc.media?.[0] || "";
-          const price = Number(eventDoc.price ?? cartItem.price ?? 0);
-          const date = eventDoc.date || cartItem.date;
-          const time = eventDoc.time || cartItem.time;
-          for (let i = 0; i < quantity; i++) {
-            ticketsToCreate.push({
-              event: eventDoc._id,
-              user: booking.user,
-              booking: booking._id,
-              eventId: cartItem.eventId,
-              title,
-              photo,
-              price,
-              date,
-              time,
-              location,
-              venue,
-              placename,
-            });
-          }
+          ticketsToCreate.push(
+            ...buildTicketsForCartItem({
+              eventDoc,
+              cartItem,
+              bookingId: booking._id,
+              userId: booking.user,
+            }),
+          );
         }
 
         if (ticketsToCreate.length === 0) {
@@ -372,35 +445,14 @@ export function createPaymentController(razorpay) {
             continue;
           }
           cartEventTypes.add(normalizeEventType(eventDoc.type));
-          const quantity = Math.max(1, Number(cartItem.quantity) || 1);
-          const venue =
-            eventDoc.venue || eventDoc.placename || eventDoc.location;
-          const placename =
-            eventDoc.placename || eventDoc.venue || eventDoc.location;
-          const location = eventDoc.location || cartItem.location || "";
-          const title = eventDoc.title || cartItem.title;
-          const photo =
-            eventDoc.photo || eventDoc.images?.[0] || eventDoc.media?.[0] || "";
-          const price = Number(eventDoc.price ?? cartItem.price ?? 0);
-          const date = eventDoc.date || cartItem.date;
-          const time = eventDoc.time || cartItem.time;
-
-          for (let i = 0; i < quantity; i++) {
-            ticketsToCreate.push({
-              event: eventDoc._id,
-              user: user._id,
-              booking: booking._id,
-              eventId: cartItem.eventId,
-              title,
-              photo,
-              price,
-              date,
-              time,
-              location,
-              venue,
-              placename,
-            });
-          }
+          ticketsToCreate.push(
+            ...buildTicketsForCartItem({
+              eventDoc,
+              cartItem,
+              bookingId: booking._id,
+              userId: user._id,
+            }),
+          );
         }
 
         if (ticketsToCreate.length > 0) {
