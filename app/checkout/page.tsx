@@ -86,9 +86,7 @@ function CheckoutContent() {
     typeof originalPrice === "number" &&
     !!event &&
     originalPrice > event.price;
-  const originalTotal = hasDiscount
-    ? originalPrice * quantity
-    : null;
+  const originalTotal = hasDiscount ? originalPrice * quantity : null;
 
   useEffect(() => {
     const eventId = searchParams.get("eventId");
