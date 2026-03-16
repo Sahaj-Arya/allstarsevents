@@ -87,7 +87,7 @@ function CheckoutContent() {
     !!event &&
     originalPrice > event.price;
   const originalTotal = hasDiscount
-    ? originalPrice * (bookingType === "drop_in" ? 1 : quantity)
+    ? originalPrice * quantity
     : null;
 
   useEffect(() => {
