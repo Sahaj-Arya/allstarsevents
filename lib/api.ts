@@ -4,6 +4,7 @@ import {
   Booking,
   CartItem,
   EventItem,
+  HomeSettings,
   PaymentMode,
   UserProfile,
   Ticket,
@@ -91,6 +92,37 @@ export async function fetchEventById(id: string): Promise<EventItem | null> {
     console.warn("Failed to fetch event", err);
     return null;
   }
+}
+
+export async function fetchHomeSettings(): Promise<HomeSettings | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/home-settings`, {
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error("Failed to fetch home settings");
+    return (await res.json()) as HomeSettings;
+  } catch (err) {
+    console.warn("Failed to fetch home settings", err);
+    return null;
+  }
+}
+
+export async function updateHomeSettings(
+  payload: Partial<HomeSettings>,
+): Promise<HomeSettings> {
+  const res = await fetch(`${API_BASE_URL}/home-settings`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}) as { error?: string });
+  if (!res.ok) {
+    const message = data?.error || "Failed to update home settings";
+    fireAlert("error", message);
+    throw new Error(message);
+  }
+  fireAlert("success", "Home settings updated");
+  return data as HomeSettings;
 }
 
 export async function fetchShareableTicket(

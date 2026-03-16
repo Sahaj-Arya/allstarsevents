@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { EventCard } from "../../components/EventCard";
-import { fetchEvents } from "../../lib/api";
-import { EventItem } from "../../lib/types";
+import { fetchEvents, fetchHomeSettings } from "../../lib/api";
+import { EventItem, HomeSettings } from "../../lib/types";
 
 type SortBy = "date-asc" | "date-desc" | "price-asc" | "price-desc" | "title";
 type FilterBy = "all" | "event" | "workshop" | "class";
@@ -14,6 +14,14 @@ export default function EventsPage() {
   const [filterBy, setFilterBy] = useState<FilterBy>("all");
   const [sortBy, setSortBy] = useState<SortBy>("date-desc");
   const [loading, setLoading] = useState(true);
+  const [homeSettings, setHomeSettings] = useState<HomeSettings>({
+    heroVideoUrl:
+      "https://api.prod.allstarsstudio.in/uploads/1772568700049-Video_Editing_Brighter_Colors.webm",
+    heroEyebrow: "Upcoming",
+    heroTitle: "Events, Workshops & Classes",
+    heroDescription: "",
+    heroOverlayOpacity: 70,
+  });
 
   useEffect(() => {
     const loadEvents = async () => {
@@ -28,6 +36,16 @@ export default function EventsPage() {
     };
 
     loadEvents();
+  }, []);
+
+  useEffect(() => {
+    const loadHomeSettings = async () => {
+      const settings = await fetchHomeSettings();
+      if (settings) {
+        setHomeSettings((prev) => ({ ...prev, ...settings }));
+      }
+    };
+    loadHomeSettings();
   }, []);
 
   useEffect(() => {
@@ -80,23 +98,31 @@ export default function EventsPage() {
           preload="auto"
           aria-hidden="true"
         >
-          <source
-            src="https://api.prod.allstarsstudio.in/uploads/1772568700049-Video_Editing_Brighter_Colors.webm"
-            type="video/webm"
-          />
+          <source src={homeSettings.heroVideoUrl} type="video/webm" />
         </video>
-        <div className="absolute inset-0 bg-black/70" />
+        <div
+          className="absolute inset-0 bg-black"
+          style={{
+            opacity:
+              Math.max(0, Math.min(100, homeSettings.heroOverlayOpacity)) / 100,
+          }}
+        />
       </div>
       <section className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-10">
         {/* Header with Title and Controls */}
         <div className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
           <div>
             <p className="text-xs uppercase tracking-[0.25em] text-white/60">
-              Upcoming
+              {homeSettings.heroEyebrow || "Upcoming"}
             </p>
             <h1 className="text-2xl sm:text-3xl font-semibold">
-              Events, Workshops & Classes
+              {homeSettings.heroTitle || "Events, Workshops & Classes"}
             </h1>
+            {homeSettings.heroDescription?.trim() && (
+              <p className="mt-2 max-w-2xl text-sm text-white/70">
+                {homeSettings.heroDescription}
+              </p>
+            )}
           </div>
 
           {/* Filter and Sort Controls - Right Aligned */}

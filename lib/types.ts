@@ -111,3 +111,12 @@ export type AdminTicketListItem = {
     phone?: string;
   };
 };
+
+export type HomeSettings = {
+  key?: string;
+  heroVideoUrl: string;
+  heroEyebrow: string;
+  heroTitle: string;
+  heroDescription?: string;
+  heroOverlayOpacity: number;
+};

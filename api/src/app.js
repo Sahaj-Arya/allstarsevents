@@ -10,6 +10,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import ticketRoutes from "./routes/ticketRoutes.js";
 import eventsRoutes from "./routes/eventsRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import homeSettingsRoutes from "./routes/homeSettingsRoutes.js";
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ app.use("/payment", paymentRoutes(razorpay));
 app.use("/tickets", ticketRoutes);
 app.use("/ticket", ticketRoutes);
 app.use("/events", eventsRoutes);
+app.use("/home-settings", homeSettingsRoutes);
 app.use("/uploads", uploadRoutes);
 app.use(publicUploadBase, express.static(resolvedUploadDir));
 

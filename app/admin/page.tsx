@@ -28,6 +28,15 @@ export default function AdminHomePage() {
           </p>
         </Link>
         <Link
+          href="/admin/home"
+          className="rounded-2xl border border-white/10 bg-white/5 p-5 text-white/80 hover:border-white/40"
+        >
+          <h2 className="text-lg font-semibold text-white">Home settings</h2>
+          <p className="mt-2 text-sm text-white/70">
+            Change homepage background video and hero text/UI.
+          </p>
+        </Link>
+        <Link
           href="/admin/tickets"
           className="rounded-2xl border border-white/10 bg-white/5 p-5 text-white/80 hover:border-white/40"
         >
