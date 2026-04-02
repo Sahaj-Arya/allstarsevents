@@ -3,6 +3,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  fetchEvents,
+  fetchClassAttendanceByDayAdmin,
   fetchAttendanceHistoryAdmin,
   fetchAttendanceRosterAdmin,
   fetchAllTicketsAdmin,
@@ -18,6 +20,8 @@ import {
   AttendanceRecord,
   AttendanceRosterRow,
   Booking,
+  ClassDayAttendanceSession,
+  EventItem,
 } from "../../../lib/types";
 
 export default function AdminTicketsPage() {
@@ -31,6 +35,9 @@ export default function AdminTicketsPage() {
   const [listTickets, setListTickets] = useState<AdminTicketListItem[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [eventLoading, setEventLoading] = useState(false);
+  const [listEventId, setListEventId] = useState("");
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
@@ -41,6 +48,22 @@ export default function AdminTicketsPage() {
   const [rosterError, setRosterError] = useState<string | null>(null);
   const [rosterEventId, setRosterEventId] = useState("");
   const [rosterSessionDate, setRosterSessionDate] = useState("");
+  const [classDay, setClassDay] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
+  const [classDayLoading, setClassDayLoading] = useState(false);
+  const [classDayError, setClassDayError] = useState<string | null>(null);
+  const [classDaySessions, setClassDaySessions] = useState<
+    ClassDayAttendanceSession[]
+  >([]);
+  const [classDayTotals, setClassDayTotals] = useState({
+    total: 0,
+    present: 0,
+    absent: 0,
+    dropInTotal: 0,
+    dropInPresent: 0,
+    dropInAbsent: 0,
+  });
 
   const formatDateTime = (value?: string) => {
     if (!value) return "-";
@@ -52,7 +75,9 @@ export default function AdminTicketsPage() {
     setListError(null);
     setListLoading(true);
     try {
-      const data = await fetchAllTicketsAdmin();
+      const data = await fetchAllTicketsAdmin(1, 200, {
+        eventId: listEventId || undefined,
+      });
       setListTickets(data.tickets || []);
     } catch (err) {
       setListError(err instanceof Error ? err.message : "Failed to load list");
@@ -98,6 +123,31 @@ export default function AdminTicketsPage() {
       );
     } finally {
       setRosterLoading(false);
+    }
+  };
+
+  const loadClassDayAttendance = async () => {
+    setClassDayError(null);
+    setClassDayLoading(true);
+    try {
+      const data = await fetchClassAttendanceByDayAdmin(classDay);
+      setClassDaySessions(data.sessions || []);
+      setClassDayTotals(
+        data.totals || {
+          total: 0,
+          present: 0,
+          absent: 0,
+          dropInTotal: 0,
+          dropInPresent: 0,
+          dropInAbsent: 0,
+        },
+      );
+    } catch (err) {
+      setClassDayError(
+        err instanceof Error ? err.message : "Failed to load class attendance",
+      );
+    } finally {
+      setClassDayLoading(false);
     }
   };
 
@@ -150,8 +200,21 @@ export default function AdminTicketsPage() {
   };
 
   useEffect(() => {
+    const loadEvents = async () => {
+      setEventLoading(true);
+      try {
+        const data = await fetchEvents();
+        setEvents(data || []);
+      } finally {
+        setEventLoading(false);
+      }
+    };
+
+    void loadEvents();
     void loadTicketsList();
     void loadAttendance();
+    void loadClassDayAttendance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const uniqueScannedUsers = new Set(
@@ -320,6 +383,38 @@ export default function AdminTicketsPage() {
           </button>
         </div>
 
+        <div className="grid gap-3 md:grid-cols-3">
+          <label className="space-y-2">
+            <span className="text-xs uppercase tracking-[0.2em] text-white/60">
+              Find by event
+            </span>
+            <select
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+              value={listEventId}
+              onChange={(e) => setListEventId(e.target.value)}
+            >
+              <option value="">All events</option>
+              {events.map((event) => (
+                <option key={event.id} value={event.id}>
+                  {event.title} ({event.id})
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="md:col-span-2 flex items-end gap-3">
+            <button
+              type="button"
+              onClick={loadTicketsList}
+              className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white"
+            >
+              {listLoading ? "Finding..." : "Find"}
+            </button>
+            {eventLoading && (
+              <p className="text-xs text-white/60">Loading events...</p>
+            )}
+          </div>
+        </div>
+
         {listError && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
             {listError}
@@ -394,6 +489,136 @@ export default function AdminTicketsPage() {
       </div>
 
       <div className="mt-12 space-y-4">
+        <div>
+          <h2 className="text-2xl font-semibold text-white">
+            Class attendance by day
+          </h2>
+          <p className="mt-1 text-sm text-white/70">
+            Shows class sessions happened on the selected date (past/today),
+            with present/absent and drop-in attendance.
+          </p>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <input
+            type="date"
+            max={new Date().toISOString().slice(0, 10)}
+            className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+            value={classDay}
+            onChange={(e) => setClassDay(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={loadClassDayAttendance}
+            className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white"
+          >
+            {classDayLoading ? "Loading..." : "Load day attendance"}
+          </button>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+          <div className="rounded-xl border border-white/10 bg-black/30 p-3">
+            <p className="text-xs text-white/50">Total</p>
+            <p className="text-xl font-semibold text-white">
+              {classDayTotals.total}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/30 p-3">
+            <p className="text-xs text-white/50">Present</p>
+            <p className="text-xl font-semibold text-emerald-200">
+              {classDayTotals.present}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/30 p-3">
+            <p className="text-xs text-white/50">Absent</p>
+            <p className="text-xl font-semibold text-amber-200">
+              {classDayTotals.absent}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/30 p-3">
+            <p className="text-xs text-white/50">Drop-ins</p>
+            <p className="text-xl font-semibold text-white">
+              {classDayTotals.dropInTotal}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/30 p-3">
+            <p className="text-xs text-white/50">Drop-in present</p>
+            <p className="text-xl font-semibold text-emerald-200">
+              {classDayTotals.dropInPresent}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/30 p-3">
+            <p className="text-xs text-white/50">Drop-in absent</p>
+            <p className="text-xl font-semibold text-amber-200">
+              {classDayTotals.dropInAbsent}
+            </p>
+          </div>
+        </div>
+
+        {classDayError && (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
+            {classDayError}
+          </div>
+        )}
+
+        <div className="space-y-3">
+          {!classDayLoading && classDaySessions.length === 0 && (
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">
+              No class sessions found for this day.
+            </div>
+          )}
+          {classDaySessions.map((session) => (
+            <div
+              key={`${session.eventId}-${session.sessionDate}`}
+              className="rounded-2xl border border-white/10 bg-white/5 p-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-white">
+                    {session.eventTitle} ({session.eventId})
+                  </p>
+                  <p className="text-xs text-white/60">
+                    {session.sessionDate}
+                    {session.time ? ` · ${session.time}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-emerald-200">
+                    Present {session.present}
+                  </span>
+                  <span className="rounded-full bg-amber-500/20 px-2 py-1 text-amber-200">
+                    Absent {session.absent}
+                  </span>
+                  <span className="rounded-full bg-white/10 px-2 py-1 text-white/80">
+                    Drop-ins {session.dropInTotal}
+                  </span>
+                </div>
+              </div>
+
+              {session.absentUsers.length > 0 && (
+                <div className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3">
+                  <p className="text-xs uppercase tracking-[0.15em] text-amber-200">
+                    Absent users
+                  </p>
+                  <div className="mt-2 grid gap-1 text-xs text-amber-100/90 sm:grid-cols-2">
+                    {session.absentUsers.map((user) => (
+                      <p key={user.ticketId}>
+                        {user.userName || "Unknown"}
+                        {user.userPhone ? ` · ${user.userPhone}` : ""}
+                        {user.bookingType === "drop_in"
+                          ? " · Drop-in"
+                          : " · Monthly"}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-12 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-semibold text-white">
@@ -449,12 +674,18 @@ export default function AdminTicketsPage() {
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <input
+          <select
             className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-            placeholder="Filter by event ID"
             value={attendanceEventId}
             onChange={(e) => setAttendanceEventId(e.target.value)}
-          />
+          >
+            <option value="">All events</option>
+            {events.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.title} ({event.id})
+              </option>
+            ))}
+          </select>
           <input
             type="date"
             className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
@@ -555,12 +786,18 @@ export default function AdminTicketsPage() {
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <input
+          <select
             className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-            placeholder="Event ID (required)"
             value={rosterEventId}
             onChange={(e) => setRosterEventId(e.target.value)}
-          />
+          >
+            <option value="">Select event (required)</option>
+            {events.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.title} ({event.id})
+              </option>
+            ))}
+          </select>
           <input
             type="date"
             className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"

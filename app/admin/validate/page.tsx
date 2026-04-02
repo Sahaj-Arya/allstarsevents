@@ -11,6 +11,7 @@ export default function ValidatePage() {
     "any" | "event" | "workshop" | "class" | "drop_in_class"
   >("any");
   const [targetEventId, setTargetEventId] = useState("");
+  const [targetSessionDate, setTargetSessionDate] = useState("");
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [scannerActive, setScannerActive] = useState(false);
@@ -32,9 +33,22 @@ export default function ValidatePage() {
 
   const runValidation = async (value: string) => {
     if (!value) return;
+    if (scanCategory === "drop_in_class" && !targetSessionDate) {
+      setScannerError("Session date is required for drop-in class scan");
+      setValidationResult({
+        status: "error",
+        error: "Session date is required for drop-in class scan",
+      });
+      return;
+    }
     setLoading(true);
     try {
-      const res = await validateTicket(value, scanCategory, targetEventId);
+      const res = await validateTicket(
+        value,
+        scanCategory,
+        targetEventId,
+        targetSessionDate,
+      );
       if (!res) {
         setValidationResult({ status: "error", error: "No response" });
         return;
@@ -220,7 +234,13 @@ export default function ValidatePage() {
       cancelled = true;
       stopScanner();
     };
-  }, [scannerActive, selectedCameraId, scanCategory, targetEventId]);
+  }, [
+    scannerActive,
+    selectedCameraId,
+    scanCategory,
+    targetEventId,
+    targetSessionDate,
+  ]);
 
   return (
     <div className="mx-auto max-w-lg px-6 py-10">
@@ -269,6 +289,19 @@ export default function ValidatePage() {
             ))}
           </select>
         </label>
+
+        {(scanCategory === "class" || scanCategory === "drop_in_class") && (
+          <label className="block text-xs text-white/70">
+            Session date{" "}
+            {scanCategory === "drop_in_class" ? "(required)" : "(optional)"}
+            <input
+              type="date"
+              value={targetSessionDate}
+              onChange={(e) => setTargetSessionDate(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+            />
+          </label>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm font-semibold text-white">Camera scanner</p>

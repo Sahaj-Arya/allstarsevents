@@ -3,6 +3,7 @@ import {
   getShareableTicket,
   getTickets,
   getAttendanceRoster,
+  getClassAttendanceByDay,
   listAttendanceHistory,
   listTickets,
   searchTickets,
@@ -17,6 +18,7 @@ router.get("/search", searchTickets);
 router.get("/list", listTickets);
 router.get("/attendance", listAttendanceHistory);
 router.get("/attendance-roster", getAttendanceRoster);
+router.get("/attendance/classes-by-day", getClassAttendanceByDay);
 router.post("/validate", validateTicket);
 router.get("/", verifyAuth, getTickets);
 

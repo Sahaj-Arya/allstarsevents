@@ -3,6 +3,7 @@ import {
   AdminTicketListItem,
   AttendanceRecord,
   AttendanceRosterRow,
+  ClassDayAttendanceSession,
   Booking,
   CartItem,
   EventItem,
@@ -316,15 +317,19 @@ export async function fetchTicketByTokenAdmin(token: string): Promise<{
 export async function fetchAllTicketsAdmin(
   page = 1,
   limit = 200,
+  options?: { eventId?: string },
 ): Promise<{
   tickets: AdminTicketListItem[];
   total: number;
   page: number;
   limit: number;
 }> {
-  const res = await fetch(
-    `${API_BASE_URL}/tickets/list?page=${page}&limit=${limit}`,
-  );
+  const search = new URLSearchParams();
+  search.set("page", String(page));
+  search.set("limit", String(limit));
+  if (options?.eventId) search.set("eventId", options.eventId);
+
+  const res = await fetch(`${API_BASE_URL}/tickets/list?${search.toString()}`);
   if (!res.ok) {
     fireAlert("error", "Failed to fetch tickets list");
     return { tickets: [], total: 0, page, limit };
@@ -417,6 +422,59 @@ export async function fetchAttendanceRosterAdmin(params: {
     presentCount: data.presentCount || 0,
     absentCount: data.absentCount || 0,
     rows: data.rows || [],
+  };
+}
+
+export async function fetchClassAttendanceByDayAdmin(day: string): Promise<{
+  day: string;
+  sessionCount: number;
+  totals: {
+    total: number;
+    present: number;
+    absent: number;
+    dropInTotal: number;
+    dropInPresent: number;
+    dropInAbsent: number;
+  };
+  sessions: ClassDayAttendanceSession[];
+}> {
+  const search = new URLSearchParams();
+  if (day) search.set("date", day);
+
+  const res = await fetch(
+    `${API_BASE_URL}/tickets/attendance/classes-by-day?${search.toString()}`,
+  );
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    fireAlert("error", data?.error || "Failed to fetch class attendance");
+    return {
+      day,
+      sessionCount: 0,
+      totals: {
+        total: 0,
+        present: 0,
+        absent: 0,
+        dropInTotal: 0,
+        dropInPresent: 0,
+        dropInAbsent: 0,
+      },
+      sessions: [],
+    };
+  }
+
+  const data = await res.json().catch(() => ({}));
+  return {
+    day: data.day || day,
+    sessionCount: data.sessionCount || 0,
+    totals: data.totals || {
+      total: 0,
+      present: 0,
+      absent: 0,
+      dropInTotal: 0,
+      dropInPresent: 0,
+      dropInAbsent: 0,
+    },
+    sessions: data.sessions || [],
   };
 }
 
@@ -658,6 +716,7 @@ export async function validateTicket(
     | "class"
     | "drop_in_class" = "any",
   targetEventId?: string,
+  targetSessionDate?: string,
 ) {
   const normalizeToken = (value: string) => {
     const trimmed = value.trim();
@@ -692,6 +751,7 @@ export async function validateTicket(
       token: normalizedToken,
       scanCategory,
       targetEventId: targetEventId || "",
+      targetSessionDate: targetSessionDate || "",
     }),
   });
 

@@ -234,9 +234,14 @@ export async function listTickets(req, res) {
     const pageRaw = Number(req.query.page || 1);
     const page = Math.max(1, pageRaw);
     const skip = (page - 1) * limit;
+    const eventId = String(req.query.eventId || "").trim();
+    const filters = {};
+    if (eventId) {
+      filters.eventId = eventId;
+    }
 
     const [tickets, total] = await Promise.all([
-      Ticket.find()
+      Ticket.find(filters)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -246,7 +251,7 @@ export async function listTickets(req, res) {
           "event",
           "venue placename location title date time price photo",
         ),
-      Ticket.countDocuments(),
+      Ticket.countDocuments(filters),
     ]);
 
     const payload = tickets.map((ticket) => {
@@ -409,9 +414,145 @@ export async function getAttendanceRoster(req, res) {
   }
 }
 
+function toYyyyMmDd(value) {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export async function getClassAttendanceByDay(req, res) {
+  try {
+    const requestedDate = String(req.query.date || "").trim();
+    const day = requestedDate || toYyyyMmDd();
+    const today = toYyyyMmDd();
+
+    if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+      return res
+        .status(400)
+        .json({ error: "valid date required (YYYY-MM-DD)" });
+    }
+    if (day > today) {
+      return res
+        .status(400)
+        .json({ error: "date must be today or in the past" });
+    }
+
+    const tickets = await Ticket.find({
+      $or: [{ sessionDate: day }, { date: day }],
+    })
+      .populate("user", "name phone email")
+      .populate("booking", "phone ticketToken")
+      .populate("event", "id title type time")
+      .sort({ time: 1, createdAt: 1 });
+
+    const classTickets = tickets.filter(
+      (ticket) => ticket.event?.type === "class",
+    );
+    const grouped = new Map();
+
+    for (const ticket of classTickets) {
+      const eventId = ticket.eventId || ticket.event?.id || "";
+      const sessionDate = ticket.sessionDate || ticket.date || day;
+      const key = `${eventId}|${sessionDate}`;
+      const existing = grouped.get(key) || {
+        eventId,
+        eventTitle: ticket.title || ticket.event?.title || "",
+        sessionDate,
+        time: ticket.time || ticket.event?.time || "",
+        total: 0,
+        present: 0,
+        absent: 0,
+        dropInTotal: 0,
+        dropInPresent: 0,
+        dropInAbsent: 0,
+        monthlyTotal: 0,
+        monthlyPresent: 0,
+        monthlyAbsent: 0,
+        attendees: [],
+      };
+
+      const isDropIn = ticket.bookingType === "drop_in";
+      const isPresent = Boolean(ticket.isScanned);
+      const attendee = {
+        ticketId: ticket._id.toString(),
+        userName: ticket.user?.name || "",
+        userPhone: ticket.user?.phone || ticket.booking?.phone || "",
+        userEmail: ticket.user?.email || "",
+        bookingType: isDropIn ? "drop_in" : "monthly",
+        status: isPresent ? "present" : "absent",
+        scannedAt: ticket.scannedAt,
+      };
+
+      existing.total += 1;
+      if (isPresent) {
+        existing.present += 1;
+      } else {
+        existing.absent += 1;
+      }
+
+      if (isDropIn) {
+        existing.dropInTotal += 1;
+        if (isPresent) existing.dropInPresent += 1;
+        else existing.dropInAbsent += 1;
+      } else {
+        existing.monthlyTotal += 1;
+        if (isPresent) existing.monthlyPresent += 1;
+        else existing.monthlyAbsent += 1;
+      }
+
+      existing.attendees.push(attendee);
+      grouped.set(key, existing);
+    }
+
+    const sessions = Array.from(grouped.values()).map((session) => ({
+      ...session,
+      absentUsers: session.attendees.filter((a) => a.status === "absent"),
+    }));
+
+    sessions.sort((a, b) => {
+      const aTime = String(a.time || "");
+      const bTime = String(b.time || "");
+      return aTime.localeCompare(bTime);
+    });
+
+    const totals = sessions.reduce(
+      (acc, session) => {
+        acc.total += session.total;
+        acc.present += session.present;
+        acc.absent += session.absent;
+        acc.dropInTotal += session.dropInTotal;
+        acc.dropInPresent += session.dropInPresent;
+        acc.dropInAbsent += session.dropInAbsent;
+        return acc;
+      },
+      {
+        total: 0,
+        present: 0,
+        absent: 0,
+        dropInTotal: 0,
+        dropInPresent: 0,
+        dropInAbsent: 0,
+      },
+    );
+
+    return res.json({
+      day,
+      sessionCount: sessions.length,
+      totals,
+      sessions,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 export async function validateTicket(req, res) {
   try {
-    const { token, scanCategory, targetEventId } = req.body || {};
+    const { token, scanCategory, targetEventId, targetSessionDate } =
+      req.body || {};
     if (!token) return res.status(400).json({ error: "token required" });
 
     const allowedCategories = new Set([
@@ -423,6 +564,13 @@ export async function validateTicket(req, res) {
     ]);
     const category = allowedCategories.has(scanCategory) ? scanCategory : "any";
     const normalizedTargetEventId = String(targetEventId || "").trim();
+    const normalizedTargetSessionDate = String(targetSessionDate || "").trim();
+
+    if (category === "drop_in_class" && !normalizedTargetSessionDate) {
+      return res
+        .status(400)
+        .json({ error: "targetSessionDate required for drop-in class scan" });
+    }
 
     const isTicketInCategory = (ticket) => {
       if (category === "any") return true;
@@ -441,6 +589,12 @@ export async function validateTicket(req, res) {
       if (!normalizedTargetEventId) return true;
       const ticketEventId = String(ticket?.eventId || ticket?.event?.id || "");
       return ticketEventId === normalizedTargetEventId;
+    };
+
+    const isTicketForSession = (ticket) => {
+      if (!normalizedTargetSessionDate) return true;
+      const session = String(ticket?.sessionDate || ticket?.date || "").trim();
+      return session === normalizedTargetSessionDate;
     };
 
     const normalizeToken = (value) => {
@@ -495,6 +649,12 @@ export async function validateTicket(req, res) {
       if (!isTicketForTarget(ticket)) {
         return res.status(400).json({
           error: `This ticket is not for event ${normalizedTargetEventId}`,
+        });
+      }
+
+      if (!isTicketForSession(ticket)) {
+        return res.status(400).json({
+          error: `This ticket is not valid for session ${normalizedTargetSessionDate}`,
         });
       }
 
@@ -565,9 +725,15 @@ export async function validateTicket(req, res) {
     }
 
     const matchingTickets = tickets.filter(
-      (t) => isTicketInCategory(t) && isTicketForTarget(t),
+      (t) =>
+        isTicketInCategory(t) && isTicketForTarget(t) && isTicketForSession(t),
     );
     if (matchingTickets.length === 0) {
+      if (normalizedTargetSessionDate) {
+        return res.status(400).json({
+          error: `No tickets found for session ${normalizedTargetSessionDate} in this booking`,
+        });
+      }
       if (normalizedTargetEventId) {
         return res.status(400).json({
           error: `No tickets found for event ${normalizedTargetEventId} in this booking`,

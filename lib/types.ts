@@ -156,3 +156,31 @@ export type AttendanceRosterRow = {
   status: "present" | "absent";
   scannedAt?: string;
 };
+
+export type ClassDayAttendanceAttendee = {
+  ticketId: string;
+  userName?: string;
+  userPhone?: string;
+  userEmail?: string;
+  bookingType: "monthly" | "drop_in";
+  status: "present" | "absent";
+  scannedAt?: string;
+};
+
+export type ClassDayAttendanceSession = {
+  eventId: string;
+  eventTitle: string;
+  sessionDate: string;
+  time?: string;
+  total: number;
+  present: number;
+  absent: number;
+  dropInTotal: number;
+  dropInPresent: number;
+  dropInAbsent: number;
+  monthlyTotal: number;
+  monthlyPresent: number;
+  monthlyAbsent: number;
+  attendees: ClassDayAttendanceAttendee[];
+  absentUsers: ClassDayAttendanceAttendee[];
+};
