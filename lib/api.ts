@@ -17,6 +17,7 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.prod.allstarsstudio.in";
 const PAYMENT_MODE = "RAZORPAY";
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
+export const HOME_SETTINGS_SYNC_KEY = "allstars:home-settings";
 
 type ApiBooking = {
   _id?: string;
@@ -71,6 +72,31 @@ export function getRazorpayKey() {
   return RAZORPAY_KEY_ID;
 }
 
+export function readCachedHomeSettings(): HomeSettings | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(HOME_SETTINGS_SYNC_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as HomeSettings;
+  } catch {
+    return null;
+  }
+}
+
+export function cacheHomeSettings(settings: HomeSettings) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(HOME_SETTINGS_SYNC_KEY, JSON.stringify(settings));
+    window.dispatchEvent(
+      new CustomEvent("allstars:home-settings-updated", { detail: settings }),
+    );
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
 export async function fetchEvents(): Promise<EventItem[]> {
   try {
     const res = await fetch(`${API_BASE_URL}/events`, { cache: "no-store" });
@@ -103,7 +129,9 @@ export async function fetchHomeSettings(): Promise<HomeSettings | null> {
       cache: "no-store",
     });
     if (!res.ok) throw new Error("Failed to fetch home settings");
-    return (await res.json()) as HomeSettings;
+    const settings = (await res.json()) as HomeSettings;
+    cacheHomeSettings(settings);
+    return settings;
   } catch (err) {
     console.warn("Failed to fetch home settings", err);
     return null;
@@ -124,6 +152,7 @@ export async function updateHomeSettings(
     fireAlert("error", message);
     throw new Error(message);
   }
+  cacheHomeSettings(data as HomeSettings);
   fireAlert("success", "Home settings updated");
   return data as HomeSettings;
 }

@@ -20,7 +20,7 @@ app.use(cors());
 // Razorpay webhooks require raw body for signature verification
 app.use("/payment/webhook", express.raw({ type: "application/json" }));
 
-app.use(express.json());
+app.use(express.json({ limit: "5mb" }));
 
 const uploadDir = process.env.UPLOAD_DIR || "uploads";
 const resolvedUploadDir = path.isAbsolute(uploadDir)

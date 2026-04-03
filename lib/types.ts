@@ -119,6 +119,11 @@ export type HomeSettings = {
   heroTitle: string;
   heroDescription?: string;
   heroOverlayOpacity: number;
+  loaderText?: string;
+  loaderAnimationData?: Record<string, unknown> | null;
+  showLoaderLottie?: boolean;
+  showLoaderLogo?: boolean;
+  showLoaderText?: boolean;
 };
 
 export type AttendanceRecord = {

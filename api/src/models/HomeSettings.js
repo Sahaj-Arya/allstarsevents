@@ -11,6 +11,11 @@ const homeSettingsSchema = new mongoose.Schema(
     },
     heroDescription: { type: String, default: "" },
     heroOverlayOpacity: { type: Number, min: 0, max: 100, default: 70 },
+    loaderText: { type: String, default: "AllStars Studios" },
+    loaderAnimationData: { type: mongoose.Schema.Types.Mixed, default: null },
+    showLoaderLottie: { type: Boolean, default: true },
+    showLoaderLogo: { type: Boolean, default: true },
+    showLoaderText: { type: Boolean, default: true },
   },
   { timestamps: true },
 );
