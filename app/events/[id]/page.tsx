@@ -6,6 +6,35 @@ import { ClassSessionSelector } from "../../../components/ClassSessionSelector";
 import { EventDetailsActions } from "../../../components/EventDetailsActions";
 import { fetchEventById } from "../../../lib/api";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://www.allstarsstudio.in";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.prod.allstarsstudio.in";
+
+function resolveShareAssetUrl(url?: string | null) {
+  if (!url) return null;
+
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+
+  const base = url.startsWith("/uploads/") ? API_BASE_URL : SITE_URL;
+  return new URL(url, `${base.replace(/\/$/, "")}/`).toString();
+}
+
+function getShareImage(event: Awaited<ReturnType<typeof fetchEventById>>) {
+  if (!event) return null;
+
+  const candidates = [
+    event.photo,
+    ...(event.images || []),
+    ...(event.media || []),
+  ].filter(Boolean);
+
+  const firstImage = candidates.find((item) => !isVideoUrl(item));
+  return resolveShareAssetUrl(firstImage || null);
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -21,31 +50,26 @@ export async function generateMetadata({
     };
   }
 
-  const media = event.images?.length
-    ? event.images
-    : event.media?.length
-      ? event.media
-      : event.photo
-        ? [event.photo]
-        : [];
-
-  const imageUrl = media[1] || media[0];
+  const imageUrl = getShareImage(event);
+  const pageUrl = new URL(
+    `/events/${id}`,
+    `${SITE_URL.replace(/\/$/, "")}/`,
+  ).toString();
+  const title = `${event.title || `Event ${id}`} | AllStars`;
+  const description = event.description || "Book your ticket now";
 
   return {
-    title: `${event.title || `Event ${id}`} | AllStars`,
-    description: event.description || "Book your ticket now",
-    icons: {
-      icon: imageUrl ?? "../../../public/assets/allstars_studio.png",
-    },
+    title,
+    description,
     openGraph: {
-      title: `${event.title || `Event ${id}`} | AllStars`,
-      description: event.description || "Book your ticket now",
+      title,
+      description,
+      url: pageUrl,
       images: imageUrl
         ? [
             {
               url: imageUrl,
-              width: 1200,
-              height: 630,
+              alt: event.title || `Event ${id}`,
             },
           ]
         : [],

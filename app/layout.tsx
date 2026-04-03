@@ -16,18 +16,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// export const metadata: Metadata = {
-//   title: "AllStars Studio",
-//   description: "Welcome to Donny's",
-// };
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://www.allstarsstudio.in";
 
-export const metadata = {
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "AllStars Studio",
   description: "Welcome to Donny's",
-
   openGraph: {
     title: "AllStars Studio",
-    images: ["../public/allstars_studio.png"],
+    description: "Welcome to Donny's",
+    siteName: "AllStars Studio",
+    type: "website",
+    images: ["/assets/allstars_studio.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AllStars Studio",
+    description: "Welcome to Donny's",
+    images: ["/assets/allstars_studio.png"],
   },
 };
 
