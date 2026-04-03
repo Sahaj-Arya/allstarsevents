@@ -125,7 +125,7 @@ export default async function EventDetailsPage({
             src={bgImage}
             alt={event.title || "background"}
             fill
-            className="h-full w-full object-contain"
+            className="h-full w-full object-cover"
             priority={false}
           />
         ) : (
@@ -144,9 +144,9 @@ export default async function EventDetailsPage({
         <div className="absolute inset-0 bg-black/70" />
       </div>
 
-      <div className="relative z-10 w-full py-5 sm:py-6">
-        <div className="mx-auto w-full max-w-6xl px-4 sm:px-5">
-          <div className="mx-auto max-w-5xl px-1 pb-4 sm:px-2 sm:pb-5">
+      <div className="relative z-10 w-full py-2 sm:py-3">
+        <div className="w-full px-2 sm:px-3 lg:px-4">
+          <div className="w-full px-1 pb-3 sm:px-1 sm:pb-4">
             <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] uppercase tracking-[0.22em] text-white/55 sm:text-xs">
               <div className="flex items-center gap-3 text-white/70">
                 <Link
@@ -240,8 +240,8 @@ export default async function EventDetailsPage({
         </div>
       </div>
 
-      <section className="relative z-10 mx-auto max-w-5xl px-4 pb-14 pt-1 sm:px-5">
-        <div className="mt-0 grid gap-5">
+      <section className="relative z-10 w-full px-2 pb-14 pt-1 sm:px-3 lg:px-4">
+        <div className="mt-0 grid w-full gap-5">
           <div className="space-y-5">
             {isRecurringClass && <ClassSessionSelector event={event} />}
             <div
@@ -255,7 +255,7 @@ export default async function EventDetailsPage({
             {media.length > 2 && (
               <div className="space-y-3">
                 <h3 className="text-base font-semibold sm:text-lg">Gallery</h3>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {media.slice(2).map((item, idx) => (
                     <div
                       key={`${item}-${idx}`}
@@ -287,7 +287,7 @@ export default async function EventDetailsPage({
             {event.about?.length ? (
               <div className="space-y-4">
                 <h2 className="text-base font-semibold sm:text-lg">About the event</h2>
-                <div className="grid gap-4">
+                <div className="grid gap-4 xl:grid-cols-2">
                   {event.about.map((section, idx) => (
                     <div
                       key={`${section.title}-${idx}`}
