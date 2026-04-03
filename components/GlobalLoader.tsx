@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Lottie from "react-lottie-player";
 import ALL_STARS_LOGO from "../public/assets/allstars_studio.png";
+import DEFAULT_BOTTLE_ANIMATION from "../public/assets/bottle.json";
 import {
   fetchHomeSettings,
   HOME_SETTINGS_SYNC_KEY,
@@ -14,15 +15,12 @@ import { HomeSettings } from "../lib/types";
 
 const DEFAULT_LOADER_TEXT = "AllStars Studios";
 
-async function loadDefaultAnimation() {
-  const response = await fetch("/assets/bottle.json");
-  return (await response.json()) as Record<string, unknown>;
-}
-
 export function GlobalLoader() {
   const pathname = usePathname();
   const [loading, setLoading] = useState(true);
-  const [animationData, setAnimationData] = useState<Record<string, unknown> | null>(null);
+  const [animationData, setAnimationData] = useState<Record<string, unknown> | null>(
+    DEFAULT_BOTTLE_ANIMATION as Record<string, unknown>,
+  );
   const [loaderText, setLoaderText] = useState(DEFAULT_LOADER_TEXT);
   const [showLoaderLottie, setShowLoaderLottie] = useState(true);
   const [showLoaderLogo, setShowLoaderLogo] = useState(true);
@@ -50,12 +48,7 @@ export function GlobalLoader() {
         return;
       }
 
-      try {
-        const fallbackAnimation = await loadDefaultAnimation();
-        if (mounted) setAnimationData(fallbackAnimation);
-      } catch {
-        if (mounted) setAnimationData(null);
-      }
+      setAnimationData(DEFAULT_BOTTLE_ANIMATION as Record<string, unknown>);
     };
 
     const cachedSettings = readCachedHomeSettings();
