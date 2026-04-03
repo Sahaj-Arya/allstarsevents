@@ -75,14 +75,14 @@ export function TicketItemCard({
   // console.log(booking, " booking in ticket item card");
 
   return (
-    <TicketShell className="shrink-0 w-[260px] min-w-[260px] max-w-[320px] sm:w-[300px]">
+    <TicketShell className="shrink-0 w-[300px] min-w-[300px] max-w-[360px] sm:w-[340px]">
       <div className="flex flex-col items-center w-full gap-1">
         {item.event.photo ? (
           <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-black/20">
             <img
               src={item.event.photo}
               alt={item.event.title || "Event"}
-              className="h-28 w-full object-cover"
+              className="h-40 w-full object-contain"
               loading="lazy"
             />
           </div>
@@ -158,7 +158,7 @@ export function TicketInstanceCard({
   // console.log(ticket, "ticket");
 
   return (
-    <TicketShell className="shrink-0 w-[260px] min-w-[260px] max-w-[320px] sm:w-[300px]">
+    <TicketShell className="shrink-0 w-[300px] min-w-[300px] max-w-[360px] sm:w-[340px]">
       <div className="flex items-center justify-between w-full">
         <p className="text-base font-semibold text-white break-words">
           {ticket.title || "Ticket"}
@@ -188,7 +188,7 @@ export function TicketInstanceCard({
           <img
             src={ticket.photo}
             alt={ticket.title || "Event"}
-            className="h-28 w-full object-cover"
+            className="h-40 w-full object-contain"
             loading="lazy"
           />
         </div>
@@ -276,7 +276,7 @@ export function TicketCard({ booking }: { booking: Booking }) {
           <img
             src={firstItem.event.photo}
             alt={firstItem.event.title || "Event"}
-            className="h-32 w-full object-cover"
+            className="h-44 w-full object-contain"
             loading="lazy"
           />
         </div>

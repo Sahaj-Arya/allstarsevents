@@ -125,7 +125,7 @@ export default async function EventDetailsPage({
             src={bgImage}
             alt={event.title || "background"}
             fill
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
             priority={false}
           />
         ) : (
@@ -144,10 +144,10 @@ export default async function EventDetailsPage({
         <div className="absolute inset-0 bg-black/70" />
       </div>
 
-      <div className="relative z-10 w-full py-8">
-        <div className="mx-auto w-full max-w-6xl px-5">
-          <div className="mx-auto max-w-6xl px-5 pb-6">
-            <div className="flex flex-wrap items-center justify-between gap-3 text-xs uppercase tracking-[0.25em] text-white/60">
+      <div className="relative z-10 w-full py-5 sm:py-6">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-5">
+          <div className="mx-auto max-w-5xl px-1 pb-4 sm:px-2 sm:pb-5">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] uppercase tracking-[0.22em] text-white/55 sm:text-xs">
               <div className="flex items-center gap-3 text-white/70">
                 <Link
                   href="/"
@@ -163,8 +163,8 @@ export default async function EventDetailsPage({
               </span> */}
             </div>
           </div>
-          <div className="overflow-hidden rounded-[12] border border-white/10 bg-black/10 backdrop-blur-xs shadow-2xl p-2">
-            <div className="relative h-[220px] w-full overflow-hidden rounded-[10px] bg-black/40 sm:h-[360px]">
+          <div className="overflow-hidden rounded-[18px] border border-white/10 bg-black/20 p-2 shadow-2xl backdrop-blur-xs">
+            <div className="relative h-[58svh] min-h-[360px] w-full overflow-hidden rounded-[14px] bg-black/40 sm:h-[68svh] sm:min-h-[460px] lg:h-[78svh] lg:min-h-[620px]">
               {hero ? (
                 heroIsVideo ? (
                   <video
@@ -185,7 +185,7 @@ export default async function EventDetailsPage({
                     src={hero}
                     alt={event.title}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                     priority
                   />
                 )
@@ -193,40 +193,38 @@ export default async function EventDetailsPage({
                 <div className="h-full w-full bg-gradient-to-br from-slate-800 via-black to-slate-900" />
               )}
             </div>
-            <div className="mt-4">
-              {/* <div className="rounded-3xl border border-white/20 bg-black/40 p-6 backdrop-blur-md shadow-2xl"> */}
-              <p className="text-xs uppercase tracking-[0.2em] text-white/70">
+            <div className="mt-3 px-1 pb-1 sm:mt-4">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">
                 {category}
               </p>
-              <h1 className="mt-1 text-xl font-semibold sm:text-4xl">
+              <h1 className="mt-1 text-lg font-semibold leading-tight sm:text-2xl lg:text-3xl">
                 {event.title}
               </h1>
-              {/* </div> */}
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-2 px-1 pb-2 sm:grid-cols-3 sm:gap-3">
               <div
-                className="rounded-2xl "
+                className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3"
                 style={{ boxShadow: "0 4px 16px 0 rgba(0,0,0,0)" }}
               >
-                <p className="text-xs uppercase tracking-[0.2em] text-white/50 pt-5">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-white/45">
                   ON
                 </p>
-                <p className="mt-2 text-lg font-semibold">{event.date}</p>
+                <p className="mt-1 text-sm font-medium sm:text-base">{event.date}</p>
               </div>
               <div
-                className="rounded-2xl pt-6"
+                className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3"
                 style={{ boxShadow: "0 4px 16px 0 rgba(0,0,0,0)" }}
               >
-                <p className="text-xs uppercase tracking-[0.2em] text-white/50">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-white/45">
                   Around
                 </p>
-                <p className="mt-2 text-lg font-semibold">{event.time}</p>
+                <p className="mt-1 text-sm font-medium sm:text-base">{event.time}</p>
               </div>
               <div
-                className="rounded-2xl pt-6"
+                className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3"
                 style={{ boxShadow: "0 4px 16px 0 rgba(0,0,0,0)" }}
               >
-                <p className="text-xs uppercase tracking-[0.2em] text-white/50">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-white/45">
                   AT
                 </p>
                 <Link
@@ -234,7 +232,7 @@ export default async function EventDetailsPage({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <p className="mt-2 text-lg font-semibold">{venue}</p>
+                  <p className="mt-1 text-sm font-medium sm:text-base">{venue}</p>
                 </Link>
               </div>
             </div>
@@ -242,31 +240,31 @@ export default async function EventDetailsPage({
         </div>
       </div>
 
-      <section className="relative z-10 mx-auto max-w-6xl px-5 pb-14 pt-0">
-        <div className="mt-0 grid gap-8">
-          <div className="space-y-8">
+      <section className="relative z-10 mx-auto max-w-5xl px-4 pb-14 pt-1 sm:px-5">
+        <div className="mt-0 grid gap-5">
+          <div className="space-y-5">
             {isRecurringClass && <ClassSessionSelector event={event} />}
             <div
-              className="rounded-3xl border border-white/20 bg-black/40 p-6 backdrop-blur-md"
+              className="rounded-3xl border border-white/15 bg-black/35 p-4 backdrop-blur-md sm:p-5"
               style={{ boxShadow: "0 4px 16px 0 rgba(0,0,0,0.37)" }}
             >
-              <h2 className="text-2xl font-semibold">Show Description</h2>
-              <p className="mt-3 text-sm text-white/80">{event.description}</p>
+              <h2 className="text-base font-semibold sm:text-lg">Show Description</h2>
+              <p className="mt-2 text-xs leading-6 text-white/78 sm:text-sm">{event.description}</p>
             </div>
 
             {media.length > 2 && (
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold">Gallery</h3>
+                <h3 className="text-base font-semibold sm:text-lg">Gallery</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {media.slice(2).map((item, idx) => (
                     <div
                       key={`${item}-${idx}`}
-                      className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/30 aspect-video"
+                      className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/30 min-h-[260px] sm:min-h-[340px] lg:min-h-[420px]"
                     >
                       {isVideoUrl(item) ? (
                         <video
                           controls
-                          className="h-full w-full object-cover"
+                          className="h-full w-full object-contain"
                           poster={event.photo || undefined}
                         >
                           <source src={item} />
@@ -277,7 +275,7 @@ export default async function EventDetailsPage({
                           alt={`${event.title} media ${idx + 2}`}
                           width={960}
                           height={640}
-                          className="h-full w-full object-cover"
+                          className="h-full w-full object-contain"
                         />
                       )}
                     </div>
@@ -288,29 +286,33 @@ export default async function EventDetailsPage({
 
             {event.about?.length ? (
               <div className="space-y-4">
-                <h2 className="text-2xl font-semibold">About the event</h2>
+                <h2 className="text-base font-semibold sm:text-lg">About the event</h2>
                 <div className="grid gap-4">
                   {event.about.map((section, idx) => (
                     <div
                       key={`${section.title}-${idx}`}
-                      className="rounded-3xl border border-white/20 bg-black/40 p-6 backdrop-blur-md"
+                      className="rounded-3xl border border-white/15 bg-black/35 p-4 backdrop-blur-md sm:p-5"
                       style={{ boxShadow: "0 4px 16px 0 rgba(0,0,0,0.37)" }}
                     >
-                      <h3 className="text-lg font-semibold">{section.title}</h3>
-                      <p className="mt-2 text-sm text-white/80">
+                      <h3 className="text-sm font-semibold sm:text-base">{section.title}</h3>
+                      <p className="mt-2 text-xs leading-6 text-white/78 sm:text-sm">
                         {section.description}
                       </p>
                       {section.images?.length ? (
                         <div className="mt-4 grid gap-3 sm:grid-cols-2">
                           {section.images.map((image, imageIdx) => (
-                            <Image
+                            <div
                               key={`${image}-${imageIdx}`}
-                              src={image}
-                              alt={`${section.title} image ${imageIdx + 1}`}
-                              width={600}
-                              height={400}
-                              className="h-full w-full rounded-2xl object-cover"
-                            />
+                              className="overflow-hidden rounded-2xl bg-black/30 min-h-[260px] sm:min-h-[340px]"
+                            >
+                              <Image
+                                src={image}
+                                alt={`${section.title} image ${imageIdx + 1}`}
+                                width={600}
+                                height={400}
+                                className="h-full w-full rounded-2xl object-contain bg-black/30"
+                              />
+                            </div>
                           ))}
                         </div>
                       ) : null}
@@ -325,7 +327,7 @@ export default async function EventDetailsPage({
       {!isRecurringClass && (
         <div className="fixed bottom-0 left-0 right-0 z-50 flex w-full items-center justify-center px-4 pb-4 pointer-events-none">
           <div
-            className="pointer-events-auto mx-auto flex max-w-md flex-1 flex-nowrap items-center justify-between gap-4 rounded-2xl border border-white/20 bg-black/20 px-3 py-3 shadow-2xl backdrop-blur-md"
+              className="pointer-events-auto mx-auto flex max-w-md flex-1 flex-nowrap items-center justify-between gap-4 rounded-2xl border border-white/20 bg-black/20 px-3 py-3 shadow-2xl backdrop-blur-md"
             style={{ boxShadow: "0 8px 32px 0 rgba(0,0,0,0.37)" }}
           >
             <div className="flex flex-col items-center gap-0 text-white">
@@ -334,7 +336,7 @@ export default async function EventDetailsPage({
                   ₹{originalPrice}
                 </span>
               )}
-              <span className="text-lg mt-[-2] font-bold">₹{event.price}</span>
+                <span className="mt-[-2] text-base font-bold sm:text-lg">₹{event.price}</span>
             </div>
             <EventDetailsActions
               event={event}

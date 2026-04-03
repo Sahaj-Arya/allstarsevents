@@ -81,15 +81,15 @@ export function EventCard({ event }: { event: EventItem }) {
           : "hover:border-white/30 hover:bg-white/10"
       }`}
     >
-      <div className="relative w-full md:w-80 h-56 md:h-auto shrink-0 bg-neutral-900">
+      <div className="relative w-full md:w-96 h-72 md:min-h-[24rem] shrink-0 bg-neutral-900">
         {primaryImage ? (
           <Image
             src={primaryImage}
             alt={event.title}
             fill
-            className="object-cover object-center"
+            className="object-contain object-center"
             style={{ borderRadius: "1.5rem 0 0 1.5rem" }}
-            sizes="(max-width: 768px) 100vw, 320px"
+            sizes="(max-width: 768px) 100vw, 384px"
             priority
             quality={60}
           />
