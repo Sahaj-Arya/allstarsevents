@@ -38,41 +38,65 @@ function getShareImage(event: Awaited<ReturnType<typeof fetchEventById>>) {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string }; // ✅ FIXED
 }): Promise<Metadata> {
-  const { id } = await params;
+  const { id } = params;
+
   const event = await fetchEventById(id);
 
-  if (!event) {
-    return {
-      title: `Event ${id} | AllStars`,
-      description: "Book your ticket now",
-    };
+  const fallbackTitle = `Event ${id} | AllStars`;
+  const fallbackDescription = "Book your ticket now";
+
+  let imageUrl: string | null = null;
+
+  if (event) {
+    imageUrl = getShareImage(event);
+
+    // ✅ Ensure absolute URL
+    if (imageUrl && !imageUrl.startsWith("http")) {
+      imageUrl = `${SITE_URL}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`;
+    }
   }
 
-  const imageUrl = getShareImage(event);
-  const pageUrl = new URL(
-    `/events/${id}`,
-    `${SITE_URL.replace(/\/$/, "")}/`,
-  ).toString();
-  const title = `${event.title || `Event ${id}`} | AllStars`;
-  const description = event.description || "Book your ticket now";
+  const pageUrl = `${SITE_URL}/events/${id}`;
+  const title = event?.title
+    ? `${event.title} | AllStars`
+    : fallbackTitle;
+  const description = event?.description || fallbackDescription;
 
   return {
     title,
     description,
+
     openGraph: {
       title,
       description,
       url: pageUrl,
+      siteName: "AllStars",
+      type: "website",
+
       images: imageUrl
         ? [
             {
-              url: imageUrl,
-              alt: event.title || `Event ${id}`,
+              url: imageUrl + "?v=1", // ✅ cache bust
+              width: 1200,
+              height: 630,
+              alt: title,
             },
           ]
         : [],
+    },
+
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: imageUrl ? [imageUrl + "?v=1"] : [],
+    },
+
+    // ✅ extra fallback (helps some crawlers)
+    alternates: {
+      canonical: pageUrl,
     },
   };
 }
