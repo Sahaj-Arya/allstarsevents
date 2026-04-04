@@ -38,65 +38,51 @@ function getShareImage(event: Awaited<ReturnType<typeof fetchEventById>>) {
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string }; // ✅ FIXED
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { id } = params;
-
+  const { id } = await params;
   const event = await fetchEventById(id);
 
-  const fallbackTitle = `Event ${id} | AllStars`;
-  const fallbackDescription = "Book your ticket now";
-
-  let imageUrl: string | null = null;
-
-  if (event) {
-    imageUrl = getShareImage(event);
-
-    // ✅ Ensure absolute URL
-    if (imageUrl && !imageUrl.startsWith("http")) {
-      imageUrl = `${SITE_URL}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`;
-    }
+  if (!event) {
+    return {
+      title: `Event ${id} | AllStars`,
+      description: "Reserve your spot now",
+    };
   }
 
-  const pageUrl = `${SITE_URL}/events/${id}`;
-  const title = event?.title
-    ? `${event.title} | AllStars`
-    : fallbackTitle;
-  const description = event?.description || fallbackDescription;
+  const imageUrl = getShareImage(event);
+  const pageUrl = new URL(
+    `/events/${id}`,
+    `${SITE_URL.replace(/\/$/, "")}/`,
+  ).toString();
+  const title = `${event.title || `Event ${id}`} | AllStars`;
+  const description = event.description || "Reserve your spot now";
 
   return {
     title,
     description,
-
     openGraph: {
       title,
       description,
       url: pageUrl,
-      siteName: "AllStars",
       type: "website",
-
+      siteName: "AllStars Studio",
       images: imageUrl
         ? [
             {
-              url: imageUrl + "?v=1", // ✅ cache bust
+              url: imageUrl,
               width: 1200,
               height: 630,
-              alt: title,
+              alt: event.title || `Event ${id}`,
             },
           ]
         : [],
     },
-
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: imageUrl ? [imageUrl + "?v=1"] : [],
-    },
-
-    // ✅ extra fallback (helps some crawlers)
-    alternates: {
-      canonical: pageUrl,
+      images: imageUrl ? [imageUrl] : [],
     },
   };
 }
