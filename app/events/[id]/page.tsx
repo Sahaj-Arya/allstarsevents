@@ -41,26 +41,66 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const event = await fetchEventById(id);
-
-  if (!event) {
-    return {
-      title: `Event ${id} | AllStars`,
-      description: "Reserve your spot now",
-    };
-  }
-
-  const imageUrl = getShareImage(event);
+  const eventId = typeof id === "string" ? id.trim() : "";
+  const fallbackImage = resolveShareAssetUrl("/assets/allstars_studio.png");
+  const fallbackTitle = eventId ? `Event ${eventId} | AllStars` : "AllStars Studio";
+  const fallbackDescription = "Book your ticket now";
   const pageUrl = new URL(
-    `/events/${id}`,
+    eventId ? `/events/${eventId}` : "/events",
     `${SITE_URL.replace(/\/$/, "")}/`,
   ).toString();
-  const title = `${event.title || `Event ${id}`} | AllStars`;
-  const description = event.description || "Reserve your spot now";
 
-  return {
+  let metadata: Metadata = {
+    title: fallbackTitle,
+    description: fallbackDescription,
+    icons: {
+      icon: fallbackImage || "/assets/allstars_studio.png",
+    },
+    openGraph: {
+      title: fallbackTitle,
+      description: fallbackDescription,
+      url: pageUrl,
+      type: "website",
+      siteName: "AllStars Studio",
+      images: fallbackImage
+        ? [
+            {
+              url: fallbackImage,
+              width: 1200,
+              height: 630,
+              alt: "AllStars Studio",
+            },
+          ]
+        : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: fallbackTitle,
+      description: fallbackDescription,
+      images: fallbackImage ? [fallbackImage] : [],
+    },
+  };
+
+  if (!eventId) {
+    return metadata;
+  }
+
+  const event = await fetchEventById(eventId);
+  if (!event) {
+    return metadata;
+  }
+
+  const eventName = event?.title?.trim() || event.category?.trim() || "AllStars Studio";
+  const imageUrl = getShareImage(event) || fallbackImage;
+  const title = `${eventName} | AllStars`;
+  const description = event.description?.trim() || fallbackDescription;
+
+  metadata = {
     title,
     description,
+    icons: {
+      icon: imageUrl || "/assets/allstars_studio.png",
+    },
     openGraph: {
       title,
       description,
@@ -73,7 +113,7 @@ export async function generateMetadata({
               url: imageUrl,
               width: 1200,
               height: 630,
-              alt: event.title || `Event ${id}`,
+              alt: eventName,
             },
           ]
         : [],
@@ -85,6 +125,8 @@ export async function generateMetadata({
       images: imageUrl ? [imageUrl] : [],
     },
   };
+
+  return metadata;
 }
 
 function isVideoUrl(url: string) {
